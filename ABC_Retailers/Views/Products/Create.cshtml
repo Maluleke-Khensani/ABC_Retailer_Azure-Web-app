@@ -1,0 +1,82 @@
+﻿@model ABC_Retailers.Models.Products
+
+<h2>Add Product</h2>
+
+
+<form asp-action="Create" method="post">
+    <div class="form-group">
+        <label asp-for="Category"></label>
+        <select asp-for="Category" class="form-control" id="CategorySelect">
+            <option value="">-- Select Category --</option>
+            <option value="Laptop">Laptop</option>
+            <option value="iPhone">iPhone</option>
+            
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="ProductName"></label>
+        <select asp-for="ProductName" class="form-control" id="ProductSelect">
+            <option value="">-- Select Product --</option>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="Price"></label>
+        <input asp-for="Price" class="form-control" readonly id="Price" />
+        <span asp-validation-for="Price" class="text-danger"></span>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="Stock"></label>
+        <input asp-for="Stock" class="form-control" readonly id="Stock" />
+        <span asp-validation-for="Stock" class="text-danger"></span>
+    </div>
+
+    <button type="submit" class="btn btn-success">Save</button>
+    <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        // Parse catalog JSON sent from controller
+        var catalog = @Html.Raw(ViewBag.CatalogJson);
+
+        // When category changes, populate product dropdown
+        document.getElementById("CategorySelect").addEventListener("change", function () {
+            var category = this.value;
+            var productSelect = document.getElementById("ProductSelect");
+
+            productSelect.innerHTML = "<option value=''>-- Select Product --</option>";
+
+            if (category) {
+                // Filter products by selected category
+                var filtered = catalog.filter(p => p.Category === category);
+
+                filtered.forEach(product => {
+                    var option = document.createElement("option");
+                    option.value = product.ProductName;
+                    option.text = product.ProductName;
+                    option.setAttribute("data-stock", product.Stock);
+                    option.setAttribute("data-price", product.Price);
+                    productSelect.appendChild(option);
+                });
+            }
+
+            // Clear stock and price fields
+            document.getElementById("Stock").value = "";
+            document.getElementById("Price").value = "";
+        });
+
+        // When product changes, auto-fill stock and price
+        document.getElementById("ProductSelect").addEventListener("change", function () {
+            var selectedOption = this.options[this.selectedIndex];
+            var stock = selectedOption.getAttribute("data-stock");
+            var price = selectedOption.getAttribute("data-price");
+
+            document.getElementById("Stock").value = stock || "";
+            document.getElementById("Price").value = price || "";
+        });
+    </script>
+}

@@ -1,0 +1,30 @@
+﻿@model Customers
+
+<div class="container mt-5">
+    <div class="card shadow-sm rounded-3">
+        <div class="card-header bg-danger text-white">
+            <h3 class="mb-0">Customer Details</h3>
+        </div>
+        <div class="card-body">
+            <div class="row mb-2">
+                <div class="col-md-6"><strong>Full Name:</strong> @Model.FirstName @Model.LastName</div>
+                <div class="col-md-6"><strong>Username:</strong> @Model.Username</div>
+            </div>
+            <div class="row mb-2">
+                <div class="col-md-6"><strong>Email:</strong> @Model.Email</div>
+                <div class="col-md-6"><strong>Address:</strong> @Model.ShippingAddress</div>
+            </div>
+            <div class="row mb-2">
+                <div class="col-md-6"><strong>Type:</strong> @Model.CustomerType</div>
+            </div>
+        </div>
+        <div class="card-footer d-flex justify-content-between">
+            <a asp-action="Edit" asp-route-partitionKey="@Model.PartitionKey" asp-route-rowKey="@Model.RowKey" class="btn btn-primary">
+                <i class="fas fa-edit me-2"></i>Edit
+            </a>
+            <a asp-action="Index" class="btn btn-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to List
+            </a>
+        </div>
+    </div>
+</div>

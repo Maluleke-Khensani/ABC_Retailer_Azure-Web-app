@@ -1,0 +1,22 @@
+﻿@model Customers
+
+<h2>Delete Customer</h2>
+<h4>Are you sure you want to delete this customer?</h4>
+
+<div>
+    <strong>@Model.FirstName @Model.LastName</strong><br />
+    Username: @Model.Username <br />
+    Email: @Model.Email <br />
+    Address: @Model.ShippingAddress <br />
+    Type: @Model.CustomerType
+</div>
+
+<form asp-action="Delete" method="post">
+    @* Hidden keys required *@
+    <input type="hidden" asp-for="PartitionKey" />
+    <input type="hidden" asp-for="RowKey" />
+
+    <button type="submit" class="btn btn-danger">Delete</button>
+    <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+</form>
+

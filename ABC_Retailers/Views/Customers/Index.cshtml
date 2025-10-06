@@ -1,0 +1,201 @@
+﻿@model IEnumerable<ABC_Retailers.Models.Customers>
+
+    
+@{
+    ViewBag.Title = "Customers";
+}
+<Style>
+
+    /* Minimal global styling (uses your palette) */
+    html, body {
+        height: 100%;
+        margin: 0;
+        background: #F2F2F2;
+        color: #434343;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        box-sizing: border-box;
+    }
+
+    *, *::before, *::after {
+        box-sizing: inherit;
+    }
+
+    /* Simple header bar used across pages */
+    .simple-topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        background: #DCDCDC; /* dream green */
+        padding: 12px 16px;
+        border-radius: 8px;
+        margin: 18px;
+    }
+
+        /* Brand area */
+        .simple-topbar .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+    .logo-wrap {
+        width: 44px;
+        height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #fff;
+        border-radius: 8px;
+        border: 2px solid #BE9A60; /* golden */
+    }
+
+    .logo-svg {
+        width: 28px;
+        height: 28px;
+    }
+
+    /* Central stat */
+    .simple-topbar .stat {
+        text-align: center;
+        min-width: 140px;
+        background: #fff;
+        padding: 8px 12px;
+        border-radius: 6px;
+    }
+
+    .stat .label {
+        font-size: 12px;
+        color: #666;
+    }
+
+    .stat .value {
+        font-size: 24px;
+        font-weight: 700;
+        color: #B9375E;
+    }
+
+    /* Actions */
+    .simple-topbar .actions {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+    }
+
+    .btn {
+        display: inline-block;
+        padding: 8px 12px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 600;
+    }
+
+    .btn-add {
+        background: #BE9A60;
+        color: #fff;
+    }
+
+    /* Table: full width, not centered */
+    .table-container {
+        margin: 0 18px 24px 18px;
+        overflow-x: auto;
+    }
+
+    .customers-table {
+        width: 100%;
+        border-collapse: collapse;
+        background: #fff;
+        border-radius: 6px;
+    }
+
+        .customers-table th, .customers-table td {
+            padding: 10px 12px;
+            text-align: left;
+            border-bottom: 1px solid #F0E9E9;
+        }
+
+        .customers-table thead th {
+            background: #434343;
+            color: #fff;
+            font-weight: 700;
+            font-size: 13px;
+        }
+    
+</Style>
+<div class="customers-page">
+
+    <!-- Top Bar -->
+    @* Minimal reusable top bar *@
+<div class="simple-topbar">
+  <!-- brand left -->
+  <div class="brand">
+    <div class="logo-wrap" aria-hidden="true">
+      <!-- compact plug/power icon -->
+      <svg class="logo-svg" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ABC Retailer">
+        <rect x="20" y="16" width="24" height="26" rx="4" fill="#B9375E"/>
+        <rect x="26" y="6" width="4" height="8" rx="1" fill="#B9375E"/>
+        <rect x="34" y="6" width="4" height="8" rx="1" fill="#B9375E"/>
+        <path d="M 18 44 q 14 12 28 0" stroke="#B9375E" stroke-width="3" fill="none" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <div>
+      <div style="font-weight:700;color:#434343;">ABC Retailer</div>
+      <div style="font-size:12px;color:#BE9A60;">Electronics &amp; Gadgets</div>
+    </div>
+  </div>
+
+  <!-- center stat (use @Model.Count() or pass a viewmodel value) -->
+  <div class="stat">
+    <div class="label">Total customers</div>
+    <div class="value">@Model.Count()</div>
+  </div>
+
+  <!-- actions right -->
+  <div class="actions">
+    <a class="btn btn-add" href="@Url.Action("Create")">＋ Add Customer</a>
+  </div>
+</div>
+
+    <!-- Table -->
+    <div class="table-container">
+        <table class="customers-table">
+            <thead>
+                <tr>
+					<th>Customer ID</th>
+					<th>First Name</th>
+                    <th>Last Name</th>
+                    <th>Email</th>
+                    <th>Customer Type</th>
+					<th>Shipping Address</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+               
+        @foreach (var customer in Model)
+        {
+            <tr>
+                <td>@customer.RowKey</td>
+                <td>@customer.FirstName</td>
+                <td>@customer.LastName</td>
+                <td>@customer.Email</td>
+                <td>@customer.CustomerType</td>
+				<td>@customer.ShippingAddress</td>
+
+                        <td>
+                            <a asp-action="Details" asp-route-partitionKey="@customer.PartitionKey" asp-route-rowKey="@customer.RowKey">Details</a>
+                            |
+                            <a asp-action="Edit" asp-route-partitionKey="@customer.PartitionKey" asp-route-rowKey="@customer.RowKey">Edit</a>
+                            |
+                            <a asp-action="Delete" asp-route-partitionKey="@customer.PartitionKey" asp-route-rowKey="@customer.RowKey">Delete</a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Add Customer Button -->
+    
+
+</div>

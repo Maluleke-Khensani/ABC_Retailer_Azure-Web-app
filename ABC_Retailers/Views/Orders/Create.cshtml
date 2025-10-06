@@ -1,0 +1,74 @@
+﻿@model ABC_Retailers.Models.Orders
+
+@{
+    ViewData["Title"] = "Create Order";
+    var customers = ViewBag.Customers as List<ABC_Retailers.Models.Customers> ?? new List<ABC_Retailers.Models.Customers>();
+    var products = ViewBag.Products as List<ABC_Retailers.Models.Products> ?? new List<ABC_Retailers.Models.Products>();
+}
+
+<h2>Create Order</h2>
+
+<form asp-action="Create" method="post">
+    <div class="form-group mb-3">
+        <label asp-for="CustomerId">Customer</label>
+        <select asp-for="CustomerId" class="form-control" id="CustomerSelect" required>
+            <option value="">-- Select Customer --</option>
+            @foreach (var c in customers)
+            {
+                <option value="@c.CustomerId">@c.Username (@c.CustomerId)</option>
+            }
+        </select>
+    </div>
+
+    <div class="form-group mb-3">
+        <label asp-for="ProductId">Product</label>
+        <select asp-for="ProductId" class="form-control" id="ProductSelect" required>
+            <option value="">-- Select Product --</option>
+            @foreach (var p in products)
+            {
+                <option value="@p.RowKey" data-price="@p.Price">@p.ProductName</option>
+            }
+        </select>
+    </div>
+
+    <div class="form-group mb-3">
+        <label asp-for="UnitPrice">Unit Price</label>
+        <input asp-for="UnitPrice" class="form-control" readonly />
+    </div>
+
+    <div class="form-group mb-3">
+        <label asp-for="Quantity">Quantity</label>
+        <input asp-for="Quantity" type="number" min="1" class="form-control" value="1" />
+    </div>
+
+    <div class="form-group mb-3">
+        <label asp-for="TotalPrice">Total Price</label>
+        <input asp-for="TotalPrice" class="form-control" readonly />
+    </div>
+
+    <button type="submit" class="btn btn-success">Place Order</button>
+    <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+</form>
+
+@section Scripts {
+    <script>
+        const productSelect = document.getElementById("ProductSelect");
+        const unitPriceInput = document.getElementById("UnitPrice");
+        const quantityInput = document.getElementById("Quantity");
+        const totalPriceInput = document.getElementById("TotalPrice");
+
+        function updatePrice() {
+            const selectedOption = productSelect.options[productSelect.selectedIndex];
+            const unitPrice = parseFloat(selectedOption.dataset.price) || 0;
+            const quantity = parseInt(quantityInput.value) || 1;
+            unitPriceInput.value = unitPrice.toFixed(2);
+            totalPriceInput.value = (unitPrice * quantity).toFixed(2);
+        }
+
+        productSelect.addEventListener("change", updatePrice);
+        quantityInput.addEventListener("input", updatePrice);
+
+        // Initialize values if already selected
+        updatePrice();
+    </script>
+}

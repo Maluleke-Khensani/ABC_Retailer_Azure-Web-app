@@ -1,0 +1,102 @@
+﻿@model ABC_Retailers.Models.Orders
+@{
+    ViewData["Title"] = "Edit Order";
+    var customers = ViewBag.Customers as List<ABC_Retailers.Models.Customers> ?? new List<ABC_Retailers.Models.Customers>();
+    var products = ViewBag.Products as List<ABC_Retailers.Models.Products> ?? new List<ABC_Retailers.Models.Products>();
+}
+
+<div class="container mt-5">
+    <div class="card shadow-sm rounded-3">
+        <div class="card-header bg-dark text-white">
+            <h3 class="mb-0">Edit Order</h3>
+        </div>
+        <div class="card-body">
+            <form asp-action="Edit" method="post">
+                <input type="hidden" asp-for="RowKey" />
+                <input type="hidden" asp-for="PartitionKey" />
+
+                <div class="mb-3">
+                    <label asp-for="CustomerId" class="form-label">Customer</label>
+                    <select asp-for="CustomerId" class="form-select" required>
+                        <option value="">-- Select Customer --</option>
+                        @foreach (var c in customers)
+                        {
+                            <option value="@c.CustomerId" selected="@(Model.CustomerId == c.CustomerId)">
+                                @c.Username (@c.CustomerId)
+                            </option>
+                        }
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="ProductId" class="form-label">Product</label>
+                    <select asp-for="ProductId" class="form-select" id="ProductSelect" required>
+                        <option value="">-- Select Product --</option>
+                        @foreach (var p in products)
+                        {
+                            <option value="@p.RowKey" data-price="@p.Price" selected="@(Model.ProductId == p.RowKey)">
+                                @p.ProductName
+                            </option>
+                        }
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="UnitPrice" class="form-label">Unit Price</label>
+                    <input asp-for="UnitPrice" class="form-control" readonly />
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Quantity" class="form-label">Quantity</label>
+                    <input asp-for="Quantity" type="number" min="1" class="form-control" />
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="TotalPrice" class="form-label">Total Price</label>
+                    <input asp-for="TotalPrice" class="form-control" readonly />
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Status" class="form-label">Order Status</label>
+                    <select asp-for="Status" class="form-select">
+                        <option value="Pending" selected="@(Model.Status == "Pending")">Pending</option>
+                        <option value="Processing" selected="@(Model.Status == "Processing")">Processing</option>
+                        <option value="Completed" selected="@(Model.Status == "Completed")">Completed</option>
+                        <option value="Cancelled" selected="@(Model.Status == "Cancelled")">Cancelled</option>
+                    </select>
+                </div>
+
+                <div class="d-flex justify-content-between">
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-save me-1"></i>Update Order
+                    </button>
+                    <a asp-action="Index" class="btn btn-secondary">
+                        <i class="fas fa-times me-1"></i>Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const productSelect = document.getElementById("ProductSelect");
+        const unitPriceInput = document.getElementById("UnitPrice");
+        const quantityInput = document.getElementById("Quantity");
+        const totalPriceInput = document.getElementById("TotalPrice");
+
+        function updatePrice() {
+            const selectedOption = productSelect.options[productSelect.selectedIndex];
+            const unitPrice = parseFloat(selectedOption.dataset.price) || 0;
+            const quantity = parseInt(quantityInput.value) || 1;
+            unitPriceInput.value = unitPrice.toFixed(2);
+            totalPriceInput.value = (unitPrice * quantity).toFixed(2);
+        }
+
+        productSelect.addEventListener("change", updatePrice);
+        quantityInput.addEventListener("input", updatePrice);
+
+        updatePrice(); // Initialize values
+    </script>
+}
