@@ -1,0 +1,147 @@
+﻿@using ABC_Retailers.Models.ViewModels
+@model CartPageView
+
+@using Microsoft.AspNetCore.Http
+@inject IHttpContextAccessor HttpContextAccessor
+
+@{
+    var user = HttpContextAccessor.HttpContext?.User;
+    if (user != null && user.IsInRole("Admin"))
+    {
+        Layout = "_LayoutAdmin";
+    }
+    else
+    {
+        Layout = "_LayoutCustomer";
+    }
+}
+
+
+@if (TempData["Message"] != null)
+{
+    <div class="alert alert-success fade-out">@TempData["Message"]</div>
+}
+
+
+@{
+    ViewData["Title"] = "Your Cart";
+}
+
+<style>
+    .cart-container {
+        margin: 24px;
+    }
+
+    .cart-table {
+        width: 100%;
+        border-collapse: collapse;
+        background: #fff;
+        border-radius: 6px;
+        overflow: hidden;
+    }
+
+        .cart-table th, .cart-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #F0E9E9;
+            vertical-align: middle;
+        }
+
+        .cart-table th {
+            background: #434343;
+            color: #fff;
+            font-weight: 700;
+            font-size: 14px;
+        }
+
+        .cart-table img {
+            width: 80px;
+            height: 80px;
+            object-fit: contain;
+            border-radius: 6px;
+        }
+
+    .btn {
+        padding: 6px 10px;
+        border-radius: 6px;
+        font-weight: 600;
+        text-decoration: none;
+        text-align: center;
+    }
+
+    .btn-update {
+        background: #B9375E;
+        color: #fff;
+    }
+
+    .btn-remove {
+        background: #434343;
+        color: #fff;
+    }
+
+    .cart-total {
+        text-align: right;
+        margin-top: 16px;
+        font-size: 18px;
+        font-weight: 700;
+    }
+</style>
+
+<div class="cart-container">
+    <h2>Your Cart</h2>
+
+    @if (!Model.Items.Any())
+    {
+        <p>Your cart is empty. <a asp-controller="ProductCatalog" asp-action="Index">Browse products</a>.</p>
+    }
+    else
+    {
+        <form asp-action="UpdateQuantities" method="post">
+            <table class="cart-table">
+                <thead>
+                    <tr>
+                        <th>Product</th>
+                        <th>Image</th>
+                        <th>Unit Price</th>
+                        <th>Quantity</th>
+                        <th>Subtotal</th>
+                        <th>Remove</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @for (int i = 0; i < Model.Items.Count; i++)
+                    {
+                        <tr>
+                            <td>@Model.Items[i].ProductName</td>
+                            <td><img src="@(!string.IsNullOrEmpty(Model.Items[i].ImageUrl) ? Model.Items[i].ImageUrl : "/images/placeholder.png")" alt="@Model.Items[i].ProductName" /></td>
+                            <td>@Model.Items[i].UnitPrice.ToString("C")</td>
+                            <td>
+                                <input type="hidden" name="items[@i].ProductId" value="@Model.Items[i].ProductId" />
+                                <input type="number" name="items[@i].Quantity" value="@Model.Items[i].Quantity" min="1" style="width:60px; padding:2px;" />
+                            </td>
+                            <td>@Model.Items[i].Subtotal.ToString("C")</td>
+                            <td>
+                                <form asp-action="Remove" asp-controller="Cart" method="post">
+                                    <input type="hidden" name="productId" value="@Model.Items[i].ProductId" />
+                                    <button type="submit" class="btn btn-remove">Remove</button>
+                                </form>
+
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+            <div class="cart-total">Total: @Model.Total.ToString("C")</div>
+
+            <div style="margin-top:12px;">
+                <button type="submit" class="btn btn-update">Update Quantities</button>
+             </div>
+            </form>
+
+        <form asp-action="Checkout" asp-controller="Cart" method="post" style="margin-top:8px;">
+            <button type="submit" class="btn btn-update">Proceed to Checkout</button>
+        </form>
+        
+    }
+</div>

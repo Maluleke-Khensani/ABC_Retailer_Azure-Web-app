@@ -1,5 +1,6 @@
 ﻿using ABC_Retailers.Azure_Services;
 using ABC_Retailers.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ABC_Retailers.Controllers
@@ -17,13 +18,42 @@ namespace ABC_Retailers.Controllers
             _azureStorageService = azureStorageService;
             _functionsApi = functionsApi;
         }
+
+        // Allow browsing
+        [AllowAnonymous]
         public async Task<IActionResult> Index()
         {
             var products = await _azureStorageService.GetAllEntitiesAsync<Products>();
             return View(products);
         }
-        // GET: Products/Create
-        // GET: Products/Create
+
+        [HttpPost]
+        [Authorize(Roles = "Customer")]
+        public async Task<IActionResult> AddToCart(string productId, int quantity)
+        {
+            var username = HttpContext.Session.GetString("Username");
+            if (string.IsNullOrEmpty(username))
+                return RedirectToAction("Index", "Login");
+
+            // Create a new Cart entry for SQL DB
+            var cart = new Cart
+            {
+                CustomerUsername = username,
+                ProductId = productId,
+                Quantity = quantity
+            };
+
+            // Save to Azure SQL via your SQL service
+            await _azureStorageService.AddToCartAsync(cart);
+
+            TempData["Message"] = "Product added to cart!";
+            return RedirectToAction("Cart", "Cart");
+        }
+
+
+
+        //  Only Admin can Create a product
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Create()
         {
             // Fetch all products once to populate Product dropdowns via JS
@@ -39,9 +69,9 @@ namespace ABC_Retailers.Controllers
 
 
 
-        // POST: Products/Create
-        [HttpPost]
-        [ValidateAntiForgeryToken]
+        // Only Admin can POST a product
+        [HttpPost, ValidateAntiForgeryToken]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Create(Products product)
         {
             if (!ModelState.IsValid)
@@ -90,7 +120,8 @@ namespace ABC_Retailers.Controllers
         }
 
 
-        // GET: Products/Edit
+        //Only Admin can Edit a product
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Edit(string partitionKey, string rowKey)
         {
             if (partitionKey == null || rowKey == null) return NotFound();
@@ -111,6 +142,7 @@ namespace ABC_Retailers.Controllers
         // POST: Products/Edit
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Edit(Products product, IFormFile? imageFile)
         {
             if (ModelState.IsValid)
@@ -156,6 +188,8 @@ namespace ABC_Retailers.Controllers
         }
 
         // GET: Products/Delete
+        [Authorize(Roles = "Admin")]
+
         public async Task<IActionResult> Delete(string partitionKey, string rowKey)
         {
             if (partitionKey == null || rowKey == null) return NotFound();

@@ -1,4 +1,5 @@
-﻿@model ABCRetailers.Models.ViewModels.HomeViewModel
+﻿@model ABC_Retailers.Models.ViewModels.HomeViewModel
+
 
 @{
     ViewData["Title"] = "Home";
@@ -8,6 +9,7 @@
     body {
         background-color: #EEEEEE;
     }
+
     .product-card {
         transition: transform 0.3s, box-shadow 0.3s;
     }
@@ -17,44 +19,43 @@
             box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
         }
 
-    .navbar .nav-link .position-absolute {
-        width: 12px; /* size of the dot */
-        height: 12px; /* size of the dot */
-        padding: 0; /* remove padding */
-        border-radius: 50%; /* make it perfectly circular */
-        top: 0px; /* adjust vertical position */
-        right: 0px; /* adjust horizontal position */
-        border: 2px solid white;
+    .hero-bg {
+        background: linear-gradient(135deg, #E5BEB5, #896C6C);
     }
 
-</style>
+    .btn-gradient {
+        background: linear-gradient(to right, #EEE6CA, #F5FAE1); /* same as Browse Products */
+        color: black; 
+        font-weight: 600;
+        padding: 12px 30px;
+        border-radius: 10px;
+        border: none;
+        transition: transform 0.3s, box-shadow 0.3s;
+    }
 
+        .btn-gradient:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+        }
+
+</style>
 
 <!-- Navbar -->
 <nav class="navbar navbar-expand-lg navbar-light bg-light mb-4">
     <div class="container">
         <a class="navbar-brand" href="/">ABC Retailers</a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
-                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
             <span class="navbar-toggler-icon"></span>
         </button>
+
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav ms-auto">
-                <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
-                <li class="nav-item"><a class="nav-link" href="/Products">Products</a></li>
-                <li class="nav-item"><a class="nav-link" href="/Orders">Orders</a></li>
-                <li class="nav-item"><a class="nav-link" href="/Customers">Customers</a></li>
-                <li class="nav-item"><a class="nav-link" href="/FileUpload/Create">Upload</a></li>
+                    <li class="nav-item"><a class="nav-link" asp-controller="Register" asp-action="Register">Products</a></li>
+                    <li class="nav-item"><a class="nav-link" asp-controller="Register" asp-action="Register">Orders</a></li>
+                    <li class="nav-item"><a class="nav-link" asp-controller="Register" asp-action="Register">Customers</a></li>
+                    <li class="nav-item"><a class="nav-link" asp-controller="Register" asp-action="Register">Upload</a></li>
+                
             </ul>
-            <ul class="navbar-nav ms-auto">
-                <li class="nav-item">
-                    <a class="nav-link position-relative d-flex align-items-center" asp-controller="Notifications" asp-action="Index">
-                        Notifications
-                        <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"></span>
-                    </a>
-                </li>
-            </ul>
-
         </div>
     </div>
 </nav>
@@ -64,33 +65,23 @@
     <div class="p-5 text-center rounded-3 hero-bg text-white shadow-lg">
         <h1 class="display-5 fw-bold">Welcome to ABC Retailers</h1>
         <p class="lead">Discover the best products from every category.</p>
-        <a class="btn btn-gradient btn-lg text-black fw-bold" href="/ProductCatalog" style="color:black;">Browse Products</a>
+
+        <!-- Login / Register Buttons for everyone -->
+        <div class="d-flex justify-content-center gap-3 mt-4">
+            <a class="btn btn-gradient btn-lg fw-bold text-dark" asp-controller="Login" asp-action="Index">Login</a>
+            <a class="btn btn-gradient btn-lg fw-bold text-dark" asp-controller="Register" asp-action="Register">Register</a>
+        </div>
+
+        <a class="btn btn-gradient btn-lg text-black fw-bold mt-3" asp-controller="Register" asp-action="Register">
+            Browse Products
+        </a>
     </div>
 </div>
 
-<style>
-    .hero-bg {
-        background: linear-gradient(135deg,#E5BEB5, #896C6C ); /* soft blue to teal gradient */
-    }
 
-    .btn-gradient {
-        background: linear-gradient(to right,#EEE6CA, #F5FAE1); /* soft green-teal */
-        border: none;
-        transition: transform 0.3s, box-shadow 0.3s;
-    }
-
-        .btn-gradient:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-        }
-</style>
-
-
-
-<!-- Best-Selling Products -->
-
+<!-- Featured Products -->
 <div class="mt-5">
-    <h3 class="text-dark mb-4"> Best Selling Items</h3>
+    <h3 class="text-dark mb-4">Best Selling Items</h3>
     <div class="row g-4">
         @if (Model.FeaturedProducts == null || !Model.FeaturedProducts.Any())
         {
@@ -117,9 +108,8 @@
                         <div class="card-body text-center">
                             <h5 class="fw-bold">@p.ProductName</h5>
                             <p class="text-info fw-semibold mb-2">@p.Price.ToString("C")</p>
-                            <a href="@Url.Action("Details", "ProductCatalog", new { category = p.Category, productName = p.ProductName })"
-                               class="btn btn-outline-primary btn-sm">
-                                View Product
+                            <a asp-controller="Register" asp-action="Register" class="btn btn-outline-primary btn-sm">
+                                Register to View
                             </a>
                         </div>
                     </div>
@@ -128,8 +118,6 @@
         }
     </div>
 </div>
-
-
 
 <!-- Footer -->
 <footer class="bg-light text-center text-muted py-3 mt-5">

@@ -17,6 +17,13 @@ namespace ABC_Retailers.Azure_Services
         Task<T> UpdateEntityAsync<T>(T entity) where T : class, Azure.Data.Tables.ITableEntity;
         Task DeleteEntityAsync<T>(string partitionKey, string rowKey) where T : class, Azure.Data.Tables.ITableEntity, new();
 
+        // Retrieves a single Product entity by ID (RowKey)
+        Task<Products?> GetProductByIdAsync(string productId);
+        Task AddToCartAsync(Cart cart);
+        Task<IEnumerable<Cart>> GetCartItemsByUserAsync(string username);
+        Task PlaceOrderFromCartAsync(string username);
+
+
         // Blob operations
         Task<string> UploadImageAsync(IFormFile file, string containerName);
         Task<string> UploadFileAsync(IFormFile file, string containerName);
@@ -29,5 +36,9 @@ namespace ABC_Retailers.Azure_Services
         // File Share operations
         Task<string> UploadToFileShareAsync(IFormFile file, string shareName, string directoryName = "");
         Task<byte[]> DownloadFromFileShareAsync(string shareName, string fileName, string directoryName = "");
+
+        Task DeleteCartItem(int cartId);
+
+
     }
 }

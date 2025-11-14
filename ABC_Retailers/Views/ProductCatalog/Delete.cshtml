@@ -1,20 +1,38 @@
 ﻿@model ABC_Retailers.Models.ProductCatalog
+@{
+    Layout = "_LayoutAdmin";
+}
 
-<h2>Delete Product Catalog Item</h2>
-<p>Are you sure you want to delete this item?</p>
+<div class="edit-container">
+    <div class="edit-card">
+        <h2 class="edit-header">Delete Product</h2>
+        <p>Are you sure you want to delete <strong>@Model.ProductName</strong>?</p>
 
-<div>
-    <strong>@Model.ProductName</strong><br />
-    Category: @Model.Category <br />
-    Price: @Model.Price.ToString("C") <br />
-    Stock: @Model.Stock <br />
-    Description: @Model.Description
+        <dl class="product-fields">
+            <dt>Category:</dt>
+            <dd>@Model.Category</dd>
+            <dt>Price:</dt>
+            <dd>@Model.Price.ToString("C")</dd>
+            <dt>Stock:</dt>
+            <dd>@Model.Stock</dd>
+            @if (!string.IsNullOrWhiteSpace(Model.Description))
+            {
+                <dt>Description:</dt>
+                <dd>@Model.Description</dd>
+            }
+        </dl>
+
+        <div class="row buttons-row">
+            <div class="col-md-6">
+                <form asp-action="DeleteConfirmed" method="post">
+                    <input type="hidden" asp-for="PartitionKey" />
+                    <input type="hidden" asp-for="RowKey" />
+                    <button type="submit" class="btn-gradient btn-save">Delete</button>
+                </form>
+            </div>
+            <div class="col-md-6">
+                <a asp-action="Index" class="btn-gradient btn-cancel">Cancel</a>
+            </div>
+        </div>
+    </div>
 </div>
-
-<form asp-action="DeleteConfirmed" method="post">
-    <input type="hidden" asp-for="PartitionKey" />
-    <input type="hidden" asp-for="RowKey" />
-    <button type="submit" class="btn btn-danger">Delete</button>
-    <a asp-action="Index" class="btn btn-secondary">Cancel</a>
-</form>
-

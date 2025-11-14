@@ -1,7 +1,10 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using ABC_Retailers.Models;
 using Azure;
 using Azure.Data.Tables;
+using Microsoft.EntityFrameworkCore;
 
 
 
@@ -13,12 +16,11 @@ namespace ABC_Retailers.Models
 
     {
 
-
-    [Display(Name = "Order ID")]
+        [Display(Name = "Order ID")]
         [Required]
-    public string OrderId => RowKey;   // RowKey acts as the unique OrderId 
+        public string OrderId => RowKey; // Azure Table RowKey
 
-    [Display(Name = "Customer ID")]
+        [Display(Name = "Customer ID")]
         [Required]
         public string CustomerId { get; set; } = string.Empty;
 
@@ -26,7 +28,7 @@ namespace ABC_Retailers.Models
     public string Username { get; set; } = string.Empty;
 
     [Display(Name = "Product ID")]
-    public string ProductId { get; set; } = string.Empty;
+    public string ProductId { get; set; } 
 
     [Display(Name = "Product Name")]
     public string ProductName { get; set; } = string.Empty;
@@ -45,18 +47,22 @@ namespace ABC_Retailers.Models
 
     [Display(Name = "Order Status")]
     public string Status { get; set; } = "Pending";
-    // Example of status: Pending, Processing, Completed, Cancelled 
 
-    public enum OrderStatus
+     public string? ProofFileName { get; set; }
+    
+        [NotMapped]
+        public string DisplayOrderId { get; set; } = string.Empty;
+
+        public enum OrderStatus
         {
-            Pending,
-            Processing,
-            Completed,
-            Cancelled
+            Pending,      // when customer first places order
+            Processing,   // when admin processes it
+            Processed,    // when admin marks it complete
+            Cancelled     // optional for future use
         }
 
         // Grouped by CustomerId
-     public string PartitionKey { get; set; } = string.Empty;
+        public string PartitionKey { get; set; } = string.Empty;
 
     // RowKey= OrderId 
     public string RowKey { get; set; } = Guid.NewGuid().ToString();

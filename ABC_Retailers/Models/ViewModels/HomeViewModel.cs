@@ -2,7 +2,7 @@
 using ABCRetailers.Models;
 using System.Collections.Generic;
 
-namespace ABCRetailers.Models.ViewModels
+namespace ABC_Retailers.Models.ViewModels
 {
     public class HomeViewModel
     {

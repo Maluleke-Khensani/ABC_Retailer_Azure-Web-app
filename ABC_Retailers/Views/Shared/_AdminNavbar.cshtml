@@ -1,0 +1,95 @@
+﻿@using Microsoft.AspNetCore.Http
+@inject IHttpContextAccessor HttpContextAccessor
+
+@{
+    var username = HttpContextAccessor.HttpContext?.Session.GetString("UserId");
+}
+
+<nav class="admin-navbar">
+    <div class="brand">
+        <a asp-controller="Home" asp-action="AdminHome">ABC Retailer <span class="role-tag">Admin</span></a>
+    </div>
+
+    <ul class="nav-links">
+        <li> <a asp-controller="Home" asp-action="AdminDashboard">Dashboard</a></li>
+        <li><a asp-controller="Customers" asp-action="AdminView">Customers</a></li>
+        <li><a asp-controller="ProductCatalog" asp-action="Index">Product Catalog</a></li>
+        <li><a asp-controller="Orders" asp-action="ManageOrders">Orders</a></li>
+        <li><a asp-controller="Notifications" asp-action="Index">Notifications</a></li>
+
+    </ul>
+
+    <div class="user-info">
+        <form asp-controller="Login" asp-action="Logout" method="post" class="d-inline">
+            <button type="submit" class="btn btn-link nav-link text-dark p-0" style="text-decoration:none;">
+                Logout
+            </button>
+        </form>
+    </div>
+</nav>
+
+<style>
+    .admin-navbar {
+        background: linear-gradient(90deg, #434343, #2e2e2e);
+        padding: 12px 24px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+
+    .brand a {
+        text-decoration: none;
+        color: #BE9A60;
+        font-size: 22px;
+        font-weight: 700;
+    }
+
+    .role-tag {
+        background: #B9375E;
+        color: #fff;
+        font-size: 12px;
+        padding: 2px 6px;
+        border-radius: 4px;
+        margin-left: 6px;
+    }
+
+    .nav-links {
+        list-style: none;
+        display: flex;
+        gap: 22px;
+        margin: 0;
+    }
+
+        .nav-links a {
+            text-decoration: none;
+            color: #f2f2f2;
+            font-weight: 600;
+            transition: color 0.2s ease;
+        }
+
+            .nav-links a:hover {
+                color: #BE9A60;
+            }
+
+    .user-info {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: #fff;
+        font-weight: 600;
+    }
+
+    .logout-btn {
+        background: #B9375E;
+        color: white;
+        padding: 6px 12px;
+        border-radius: 6px;
+        text-decoration: none;
+    }
+
+        .logout-btn:hover {
+            background: #a12f4d;
+        }
+</style>
+

@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\lab_services_student\\Documents\\CLDV6212_ABC-Retailers\\ABC_Retailers\\ABC_Retailers.csproj": {}
+    "C:\\Users\\lab_services_student\\Desktop\\ABC_Retailer_Azure-Web-app3\\ABC_Retailers\\ABC_Retailers.csproj": {}
   },
   "projects": {
-    "C:\\Users\\lab_services_student\\Documents\\CLDV6212_ABC-Retailers\\ABC_Retailers\\ABC_Retailers.csproj": {
+    "C:\\Users\\lab_services_student\\Desktop\\ABC_Retailer_Azure-Web-app3\\ABC_Retailers\\ABC_Retailers.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\lab_services_student\\Documents\\CLDV6212_ABC-Retailers\\ABC_Retailers\\ABC_Retailers.csproj",
+        "projectUniqueName": "C:\\Users\\lab_services_student\\Desktop\\ABC_Retailer_Azure-Web-app3\\ABC_Retailers\\ABC_Retailers.csproj",
         "projectName": "ABC_Retailers",
-        "projectPath": "C:\\Users\\lab_services_student\\Documents\\CLDV6212_ABC-Retailers\\ABC_Retailers\\ABC_Retailers.csproj",
+        "projectPath": "C:\\Users\\lab_services_student\\Desktop\\ABC_Retailer_Azure-Web-app3\\ABC_Retailers\\ABC_Retailers.csproj",
         "packagesPath": "C:\\Users\\lab_services_student\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\lab_services_student\\Documents\\CLDV6212_ABC-Retailers\\ABC_Retailers\\obj\\",
+        "outputPath": "C:\\Users\\lab_services_student\\Desktop\\ABC_Retailer_Azure-Web-app3\\ABC_Retailers\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -65,6 +65,10 @@
             "Azure.Storage.Queues": {
               "target": "Package",
               "version": "[12.23.0, )"
+            },
+            "Microsoft.Azure.DocumentDB.Core": {
+              "target": "Package",
+              "version": "[2.22.0, )"
             },
             "Microsoft.EntityFrameworkCore.SqlServer": {
               "target": "Package",

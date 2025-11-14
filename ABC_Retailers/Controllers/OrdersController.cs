@@ -1,11 +1,14 @@
 ﻿using System.Text.Json;
 using ABC_Retailers.Azure_Services;
 using ABC_Retailers.Models;
+using ABCRetailers.Models.ViewModels;
+using Azure.Data.Tables;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ABC_Retailers.Controllers
 {
-    // Assited by ChatGPT, with heavy modifications
+    [Authorize]
     public class OrdersController : Controller
     {
         private readonly IAzureStorageService _azureStorageService;
@@ -19,67 +22,151 @@ namespace ABC_Retailers.Controllers
             _logger = logger;
         }
 
-        // GET: Orders
+
+        [Authorize(Roles = "Admin,Customer")]
         public async Task<IActionResult> Index()
         {
+            var username = User.Identity?.Name;
+            var isAdmin = User.IsInRole("Admin");
+
             var orders = await _azureStorageService.GetAllEntitiesAsync<Orders>();
-            return View(orders.OrderByDescending(o => o.OrderDate));
+
+            if (!isAdmin && !string.IsNullOrEmpty(username))
+            {
+                orders = orders
+                    .Where(o => o.PartitionKey.Equals(username, StringComparison.OrdinalIgnoreCase))
+                    .OrderByDescending(o => o.OrderDate)
+                    .ToList();
+            }
+            else
+            {
+                orders = orders.OrderByDescending(o => o.OrderDate).ToList();
+            }
+
+            // Add friendly short order ID
+            foreach (var order in orders)
+            {
+                order.DisplayOrderId = $"ORD-{order.RowKey.GetHashCode().ToString("00000").TrimStart('-')}";
+            }
+
+            return View(orders);
         }
 
-        // GET: Orders/Create
+
+
+
+
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> ManageOrders()
+        {
+            var orders = await _azureStorageService.GetAllEntitiesAsync<Orders>();
+            return View("Index", orders.OrderByDescending(o => o.OrderDate));
+        }
+
+
+        [HttpGet]
+        [Authorize(Roles = "Customer")]
         public async Task<IActionResult> Create()
         {
+            var username = HttpContext.Session.GetString("UserId");
+            if (string.IsNullOrEmpty(username))
+                return RedirectToAction("Login", "Account");
 
-            var customers = await _azureStorageService.GetAllEntitiesAsync<Customers>();
-            var products = await _azureStorageService.GetAllEntitiesAsync<Products>();
+            // 🛒 Get the user's cart
+            var cartItems = await _azureStorageService.GetCartItemsByUserAsync(username);
 
-            ViewBag.Customers = customers;
-            ViewBag.Products = products;
+            // Convert to view models
+            var viewModelList = new List<ABC_Retailers.Models.ViewModels.CartItemViewModel>();
 
-            return View();
+            foreach (var item in cartItems)
+            {
+                // Get product details from Azure Table
+                var product = await _azureStorageService.GetProductByIdAsync(item.ProductId);
+                if (product != null)
+                {
+                    viewModelList.Add(new ABC_Retailers.Models.ViewModels.CartItemViewModel
+                    {
+                        ProductId = item.ProductId,
+                        ProductName = product.ProductName,
+                        Quantity = item.Quantity,
+                        UnitPrice = (double)product.Price
+                    });
+                }
+            }
+
+            // Pass cart data to view
+            ViewBag.CartItems = viewModelList;
+
+            return View(new ProofOfPaymentRecord());
         }
 
-        // POST: Orders/Create
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(Orders order)
         {
-            _logger.LogInformation("Order Data: {@Order}", order);
-
-            if (ModelState.IsValid)
+            if (!ModelState.IsValid)
             {
-                try
-                {
-                    await _functionsApi.CreateOrderAsync(order);
+                TempData["ErrorMessage"] = "Invalid order input.";
+                return View(order);
+            }
 
-                    TempData["Message"] = "Order created successfully!";
-                    return RedirectToAction(nameof(Index));
-                }
-                catch (Exception ex)
+            try
+            {
+                await _functionsApi.CreateOrderAsync(order);
+                TempData["Message"] = "Order created successfully!";
+                return RedirectToAction(nameof(Index));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating order");
+                TempData["ErrorMessage"] = "Failed to create order.";
+                return View(order);
+            }
+        }
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SubmitOrder(IFormFile ProofOfPayment, DateTime PaymentDate)
+        {
+            var username = HttpContext.Session.GetString("UserId");
+            if (string.IsNullOrEmpty(username)) return RedirectToAction("Login", "Account");
+
+            // 1️⃣ Place orders from the cart
+            await _azureStorageService.PlaceOrderFromCartAsync(username);
+
+            // 2️⃣ Fetch the latest order(s) for this user
+            var orders = (await _azureStorageService.GetAllEntitiesAsync<Orders>())
+                            .Where(o => o.PartitionKey == username)
+                            .OrderByDescending(o => o.OrderDate)
+                            .Take(1)
+                            .ToList();
+
+            // 3️⃣ Upload proof of payment and update orders
+            if (ProofOfPayment != null && orders.Any())
+            {
+                // Upload to File Share
+                var uploadedFileName = await _azureStorageService.UploadToFileShareAsync(
+                    ProofOfPayment, "contracts", "payments"
+                );
+
+                foreach (var order in orders)
                 {
-                    _logger.LogError(ex, "Error creating order");
-                    TempData["ErrorMessage"] = "Failed to create order.";
+                    order.ProofFileName = uploadedFileName ?? "TESTFILE.pdf";
+                    order.ETag = Azure.ETag.All;
+
+                    // Update using your service (no direct TableClient)
+                    await _azureStorageService.UpdateEntityAsync(order);
                 }
             }
 
-            TempData["ErrorMessage"] = "Invalid input. Please check and try again.";
-            return View(order);
+            TempData["Message"] = "Order placed successfully!";
+            return RedirectToAction("Details", new { partitionKey = username, rowKey = orders.First().RowKey });
         }
 
 
-        // GET: Orders/Details
-        public async Task<IActionResult> Details(string partitionKey, string rowKey)
-        {
-            if (string.IsNullOrEmpty(partitionKey) || string.IsNullOrEmpty(rowKey))
-                return NotFound();
 
-            var order = await _azureStorageService.GetEntityAsync<Orders>(partitionKey, rowKey);
-            if (order == null) return NotFound();
 
-            return View(order);
-        }
-
-        // GET: Orders/Edit
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Edit(string partitionKey, string rowKey)
         {
             if (string.IsNullOrEmpty(partitionKey) || string.IsNullOrEmpty(rowKey))
@@ -88,19 +175,22 @@ namespace ABC_Retailers.Controllers
             var order = await _azureStorageService.GetEntityAsync<Orders>(partitionKey, rowKey);
             if (order == null) return NotFound();
 
-            // Load dropdowns
             ViewBag.Customers = await _azureStorageService.GetAllEntitiesAsync<Customers>();
             ViewBag.Products = await _azureStorageService.GetAllEntitiesAsync<Products>();
-
             return View(order);
         }
 
-        // POST: Orders/Edit
-        [HttpPost]
-        [ValidateAntiForgeryToken]
+        [HttpPost, ValidateAntiForgeryToken]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Edit(Orders order)
         {
-            if (ModelState.IsValid)
+            if (!ModelState.IsValid)
+            {
+                TempData["ErrorMessage"] = "Invalid input.";
+                return View(order);
+            }
+
+            try
             {
                 order.PartitionKey = order.CustomerId;
                 order.OrderDate = DateTime.SpecifyKind(order.OrderDate, DateTimeKind.Utc);
@@ -108,76 +198,143 @@ namespace ABC_Retailers.Controllers
                 order.ETag = Azure.ETag.All;
 
                 await _azureStorageService.UpdateEntityAsync(order);
-
-                TempData["Message"] = "Order updated successfully!"; // ✅ success message
-
+                TempData["Message"] = "Order updated successfully!";
                 return RedirectToAction(nameof(Index));
             }
-
-            // Reload dropdowns if validation fails
-            ViewBag.Customers = await _azureStorageService.GetAllEntitiesAsync<Customers>();
-            ViewBag.Products = await _azureStorageService.GetAllEntitiesAsync<Products>();
-
-            TempData["ErrorMessage"] = "Failed to update order. Please check the input."; // ❌ error message
-
-            return View(order);
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating order");
+                TempData["ErrorMessage"] = "Failed to update order.";
+                return View(order);
+            }
         }
 
-
-        // GET: Orders/Delete
+        [Authorize]
         public async Task<IActionResult> Delete(string partitionKey, string rowKey)
         {
             var order = await _azureStorageService.GetEntityAsync<Orders>(partitionKey, rowKey);
-            if (order == null)
-            {
-                return NotFound();
-            }
+            if (order == null) return NotFound();
             return View(order);
         }
 
-        [HttpPost, ActionName("Delete")]
+
+
+        [HttpPost]
+        [Authorize]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(string partitionKey, string rowKey)
         {
+            // 1️⃣ Fetch the order
+            var order = await _azureStorageService.GetEntityAsync<Orders>(partitionKey, rowKey);
+            if (order == null)
+                return NotFound();
+
+            // 2️⃣ Check roles
+            var isAdmin = User.IsInRole("Admin");
+            var username = User.Identity?.Name;
+
+            // 3️⃣ Customers can only delete their own orders
+            if (!isAdmin && order.CustomerId != username)
+            {
+                TempData["ErrorMessage"] = "You can only delete your own orders.";
+                return RedirectToAction("Index");
+            }
+
+            // 4️⃣ Customers can only delete if status is "Placed"
+            if (!isAdmin && order.Status != "Placed")
+            {
+                TempData["ErrorMessage"] = "You can only delete orders that haven’t been processed yet.";
+                return RedirectToAction("Index");
+            }
+
+            // 5️⃣ Delete the order
             await _azureStorageService.DeleteEntityAsync<Orders>(partitionKey, rowKey);
+            TempData["Message"] = "Order deleted successfully.";
+
+            return RedirectToAction("Index");
+        }
+
+
+
+        [HttpPost]
+        [Authorize(Roles = "Admin")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ProcessOrder(string partitionKey, string rowKey)
+        {
+            var order = await _azureStorageService.GetEntityAsync<Orders>(partitionKey, rowKey);
+            if (order == null) return NotFound();
+
+            if (order.Status == "Placed")
+                order.Status = "Processing";
+            else if (order.Status == "Processing")
+                order.Status = "Processed";
+
+            order.ETag = Azure.ETag.All;
+            await _azureStorageService.UpdateEntityAsync(order);
+
+            TempData["Message"] = $"Order {order.DisplayOrderId} status updated to {order.Status}";
             return RedirectToAction(nameof(Index));
         }
 
-
-        // GET: Orders/ProcessOrders
-        public async Task<IActionResult> ProcessOrders()
+        [Authorize(Roles = "Admin,Customer")]
+        public async Task<IActionResult> Details(string partitionKey, string rowKey)
         {
-            // Try to receive a message
-            var message = await _azureStorageService.ReceiveMessageAsync("order-notifications");
-
-            if (string.IsNullOrEmpty(message))
-            {
-                ViewBag.Message = "No messages found in the queue.";
-                return View("QueueResult"); // Make a simple view to display messages
-            }
-
-            // Deserialize queue message
-            var data = JsonSerializer.Deserialize<Dictionary<string, string>>(message);
-            string partitionKey = data["PartitionKey"];
-            string rowKey = data["RowKey"];
-
-            // Retrieve the order
             var order = await _azureStorageService.GetEntityAsync<Orders>(partitionKey, rowKey);
+            if (order == null) return NotFound();
 
-            if (order == null)
+            // Only allow customer to see their own orders
+            if (User.IsInRole("Customer") && User.Identity?.Name != order.CustomerId)
+                return Forbid();
+
+            // Dynamically generate the proof URL
+            string? proofUrl = string.IsNullOrEmpty(order.ProofFileName)
+                ? null
+                : Url.Action("DownloadFromFileShare", "Orders", new { fileName = order.ProofFileName }, Request.Scheme);
+
+            var vm = new OrderDetailsViewModel
             {
-                ViewBag.Message = $"Order not found: {partitionKey}, {rowKey}";
-                return View("QueueResult");
-            }
+                Order = order,
+                ProofFileName = order.ProofFileName,
+                ProofFileUrl = proofUrl
+            };
 
-            // Update status (simulate processing)
-            order.Status = Orders.OrderStatus.Processing.ToString();
-            await _azureStorageService.UpdateEntityAsync(order);
-
-            ViewBag.Message = $"Order {rowKey} for Customer {partitionKey} processed successfully.";
-            return View("QueueResult");
+            return View(vm);
         }
 
 
+
+        public async Task<IActionResult> DownloadFromFileShare(string fileName)
+        {
+            var data = await _azureStorageService.DownloadFromFileShareAsync("contracts", fileName, "payments");
+            return File(data, "application/octet-stream", fileName);
+        }
+
+
+ [HttpGet]
+        [Authorize(Roles = "Admin,Customer")]
+        public async Task<JsonResult> GetProductPrice(string productId)
+        {
+            try
+            {
+                var product = await _azureStorageService.GetProductByIdAsync(productId);
+                if (product != null)
+                {
+                    return Json(new
+                    {
+                        success = true,
+                        price = product.Price,
+                        stock = product.Stock,
+                        productName = product.ProductName
+                    });
+                }
+
+                return Json(new { success = false, message = "Product not found." });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving product price for {ProductId}", productId);
+                return Json(new { success = false, message = "Error retrieving product price." });
+            }
+        }
     }
 }

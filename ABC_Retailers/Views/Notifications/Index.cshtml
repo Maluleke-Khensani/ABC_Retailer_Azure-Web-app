@@ -1,119 +1,69 @@
-﻿@using Azure.Core
+﻿@using Microsoft.AspNetCore.Identity
+@using System.Security.Claims
 @model List<ABC_Retailers.Models.Notifications>
+@using Microsoft.AspNetCore.Http
+@inject IHttpContextAccessor HttpContextAccessor
+
+@{
+    var user = HttpContextAccessor.HttpContext?.User;
+    if (user != null && user.IsInRole("Admin"))
+    {
+        Layout = "_LayoutAdmin";
+    }
+    else
+    {
+        Layout = "_LayoutCustomer";
+    }
+}
+
+
 
 @{
     ViewBag.Title = "Notifications";
+    var isAdmin = User.IsInRole("Admin");
 }
 
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
 
 <style>
-    body {
-        background: #F2F2F2;
-        color: #434343;
-        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-    }
-
-    .simple-topbar {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12px;
-        background: #DCDCDC;
-        padding: 12px 16px;
-        border-radius: 8px;
-        margin: 18px;
-    }
-
-    .brand {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-    }
-
-    .logo-wrap {
-        width: 44px;
-        height: 44px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: #fff;
-        border-radius: 8px;
-        border: 2px solid #BE9A60;
-    }
-
-    .logo-svg {
-        width: 28px;
-        height: 28px;
-    }
-
-    .stat {
-        text-align: center;
-        min-width: 140px;
-        background: #fff;
-        padding: 8px 12px;
-        border-radius: 8px;
-    }
-
-        .stat .value {
-            font-size: 1.4em;
-            font-weight: bold;
-        }
-
-        .stat .label {
-            font-size: 0.85em;
-            color: #777;
-        }
-
-    .no-notifications {
-        text-align: center;
-        padding: 40px;
-        color: #777;
-        font-size: 1.2em;
+    .toast-container {
+        position: fixed;
+        top: 1rem;
+        right: 1rem;
+        z-index: 1060;
     }
 </style>
 
-<div class="simple-topbar">
-    <div class="brand">
-        <div class="logo-wrap" aria-hidden="true">
-            <svg class="logo-svg" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
-                <rect x="20" y="16" width="24" height="26" rx="4" fill="#B9375E" />
-                <rect x="26" y="6" width="4" height="8" rx="1" fill="#B9375E" />
-                <rect x="34" y="6" width="4" height="8" rx="1" fill="#B9375E" />
-                <path d="M 18 44 q 14 12 28 0" stroke="#B9375E" stroke-width="3" fill="none" stroke-linecap="round" />
-            </svg>
-        </div>
-        <div>
-            <div style="font-weight:700;color:#434343;">ABC Retailer</div>
-            <div style="font-size:12px;color:#BE9A60;">Notifications Center</div>
-        </div>
-    </div>
-    <div class="stat">
-        <div class="label">Total Notifications</div>
-        <div class="value">@Model.Count</div>
-    </div>
-</div>
+<div class="container mt-4">
+    <h2 class="mb-3 text-center">📢 Notifications</h2>
 
-<div class="container mt-3">
     @if (Model.Count == 0)
     {
-        <div class="no-notifications">No notifications available.</div>
+        <div class="alert alert-info text-center">No notifications found.</div>
     }
     else
     {
         <div class="row g-3">
-            @foreach (var notification in Model)
+            @foreach (var note in Model)
             {
                 <div class="col-md-6 col-lg-4">
-                    <div class="card shadow-sm h-100 border-0">
+                    <div class="card shadow-sm border-0">
                         <div class="card-body">
-                            <h6 class="card-title text-primary">@notification.ProductName</h6>
-                            <p class="card-text">@notification.Message</p>
-                            <span class="badge bg-secondary me-2">@notification.Category</span>
-                            <span class="badge bg-success">Stock: @notification.NewStock</span>
+                            <h6 class="card-title text-primary">@note.ProductName</h6>
+                            <p class="card-text">@note.Message</p>
+                            <span class="badge bg-secondary">@note.Category</span>
+                            @if (note.NewStock != null)
+                            {
+                                <span class="badge bg-success">Stock: @note.NewStock</span>
+                            }
                         </div>
-                        <div class="card-footer text-muted small">
-                            Notification ID: @notification.Id
+                        <div class="card-footer text-muted small d-flex justify-content-between align-items-center">
+                            <span>@note.CreatedAt.LocalDateTime.ToString("g")</span>
+                            @if (isAdmin)
+                            {
+                                <a asp-action="Delete" asp-route-partitionKey="@note.PartitionKey" asp-route-rowKey="@note.RowKey"
+                                   class="btn btn-sm btn-outline-danger">Delete</a>
+                            }
                         </div>
                     </div>
                 </div>
@@ -121,3 +71,19 @@
         </div>
     }
 </div>
+
+@if (ViewBag.NewNotification != null)
+{
+    <div class="toast-container">
+        <div class="toast show align-items-center text-bg-success border-0" role="alert">
+            <div class="d-flex">
+                <div class="toast-body">
+                    @ViewBag.NewNotification
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        </div>
+    </div>
+}
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>

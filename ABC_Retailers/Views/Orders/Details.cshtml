@@ -1,49 +1,31 @@
-﻿@model ABC_Retailers.Models.Orders
+﻿<h2>Order Details</h2>
+<p>Status: <strong>@Model.Order.Status</strong></p>
 
-<div class="container mt-5">
-    <div class="card shadow-sm rounded-3">
-        <div class="card-header bg-dark text-white">
-            <h3 class="mb-0">Order Details</h3>
-        </div>
-        <div class="card-body">
-            <dl class="row mb-0">
-                <dt class="col-sm-3 text-muted">Order ID</dt>
-                <dd class="col-sm-9">@Model.RowKey</dd>
+<table class="table table-bordered table-striped">
+    <tbody>
+        <tr><th>Order ID</th><td>@Model.Order.RowKey</td></tr>
+        <tr><th>Customer ID</th><td>@Model.Order.CustomerId</td></tr>
+        <tr><th>Product Name</th><td>@Model.Order.ProductName</td></tr>
+        <tr><th>Quantity</th><td>@Model.Order.Quantity</td></tr>
+        <tr><th>Unit Price</th><td>@Model.Order.UnitPrice.ToString("C")</td></tr>
+        <tr><th>Total Price</th><td>@Model.Order.TotalPrice.ToString("C")</td></tr>
+        <tr><th>Order Date</th><td>@Model.Order.OrderDate.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</td></tr>
+        <tr>
+            <th>Proof of Payment</th>
+            <td>
+                @if (!string.IsNullOrEmpty(Model.ProofFileName))
+                {
+                    <a class="btn btn-sm btn-primary" target="_blank" href="@Model.ProofFileUrl">View/Download</a>
+                }
+                else
+                {
+                    <span>No proof uploaded</span>
+                }
+            </td>
+        </tr>
+    </tbody>
+</table>
 
-                <dt class="col-sm-3 text-muted">Customer ID</dt>
-                <dd class="col-sm-9">@Model.CustomerId</dd>
-
-                <dt class="col-sm-3 text-muted">Product ID</dt>
-                <dd class="col-sm-9">@Model.ProductId</dd>
-
-                <dt class="col-sm-3 text-muted">Quantity</dt>
-                <dd class="col-sm-9">@Model.Quantity</dd>
-
-                <dt class="col-sm-3 text-muted">Unit Price</dt>
-                <dd class="col-sm-9">@Model.UnitPrice.ToString("C")</dd>
-
-                <dt class="col-sm-3 text-muted">Total Price</dt>
-                <dd class="col-sm-9">@Model.TotalPrice.ToString("C")</dd>
-
-                <dt class="col-sm-3 text-muted">Order Date</dt>
-                <dd class="col-sm-9">@Model.OrderDate.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</dd>
-
-                <dt class="col-sm-3 text-muted">Status</dt>
-                <dd class="col-sm-9">@Model.Status</dd>
-            </dl>
-        </div>
-        <div class="card-footer d-flex justify-content-between">
-            <div>
-                <a asp-action="Edit" asp-route-partitionKey="@Model.PartitionKey" asp-route-rowKey="@Model.RowKey" class="btn btn-warning me-2">
-                    <i class="fas fa-edit me-1"></i>Edit
-                </a>
-                <a asp-action="Delete" asp-route-partitionKey="@Model.PartitionKey" asp-route-rowKey="@Model.RowKey" class="btn btn-danger">
-                    <i class="fas fa-trash me-1"></i>Delete
-                </a>
-            </div>
-            <a asp-action="Index" class="btn btn-secondary">
-                <i class="fas fa-arrow-left me-1"></i>Back to Orders
-            </a>
-        </div>
-    </div>
+<div class="mt-3">
+    <a asp-action="Index" class="btn btn-secondary">Back to Orders</a>
 </div>

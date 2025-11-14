@@ -1,6 +1,11 @@
 ﻿@model ABC_Retailers.Models.Orders
 
 @{
+    Layout = "_LayoutAdmin";
+}
+
+
+@{
     ViewData["Title"] = "Create Order";
     var customers = ViewBag.Customers as List<ABC_Retailers.Models.Customers> ?? new List<ABC_Retailers.Models.Customers>();
     var products = ViewBag.Products as List<ABC_Retailers.Models.Products> ?? new List<ABC_Retailers.Models.Products>();

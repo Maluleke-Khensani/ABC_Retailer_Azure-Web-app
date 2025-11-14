@@ -1,0 +1,27 @@
+﻿@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - ABC Retailer</title>
+    <link rel="stylesheet" href="~/css/site.css" />
+</head>
+<body style="background-color:#F2F2F2; font-family:'Segoe UI'; margin:0;">
+    <!-- 🌸 Customer Navigation -->
+    @await Html.PartialAsync("_CustomerNavbar")
+
+    <main role="main" class="container" style="padding: 20px;">
+        @RenderBody()
+    </main>
+
+    <footer style="text-align:center; padding:12px; background:#DCDCDC; color:#555; margin-top:40px;">
+        &copy; @DateTime.Now.Year - ABC Retailer | Customer Portal
+    </footer>
+
+    @RenderSection("Scripts", required: false)
+</body>
+</html>

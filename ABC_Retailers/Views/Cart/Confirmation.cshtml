@@ -1,0 +1,48 @@
+﻿@using ABC_Retailers.Models.ViewModels
+@{
+    ViewData["Title"] = "Order Confirmation";
+    var cartItems = ViewBag.CartItems as List<CartItemViewModel> ?? new();
+    double total = cartItems.Sum(i => i.Subtotal);
+}
+
+<div class="container mt-5 text-center">
+    <h2 class="text-success mb-3">Order Confirmed 🎉</h2>
+    <p>Your order has been placed successfully!</p>
+
+    @if (cartItems.Any())
+    {
+        <div class="mt-4">
+            <table class="table table-bordered text-start">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Product</th>
+                        <th>Qty</th>
+                        <th>Price</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in cartItems)
+                    {
+                        <tr>
+                            <td>@item.ProductName</td>
+                            <td>@item.Quantity</td>
+                            <td>@item.UnitPrice.ToString("C")</td>
+                            <td>@item.Subtotal.ToString("C")</td>
+                        </tr>
+                    }
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="3" class="text-end"><strong>Grand Total:</strong></td>
+                        <td><strong>@total.ToString("C")</strong></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    }
+
+    <a asp-controller="Orders" asp-action="MyOrders" class="btn btn-primary mt-3">
+        View My Orders
+    </a>
+</div>

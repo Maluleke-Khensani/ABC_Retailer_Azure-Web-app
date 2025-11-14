@@ -1,0 +1,147 @@
+﻿@model ABC_Retailers.Models.Customers
+
+@{
+    Layout = "_LayoutCustomer";
+}
+
+
+@{
+    ViewData["Title"] = "My Profile";
+}
+
+
+@if (TempData["Message"] != null)
+{
+    <div class="alert alert-success fade-out">@TempData["Message"]</div>
+}
+
+
+<style>
+    body {
+        background-color: #F2F2F2;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    .profile-container {
+        max-width: 900px;
+        margin: 40px auto;
+    }
+
+    .profile-card {
+        background: linear-gradient(to right, #EEE6CA, #F5FAE1);
+        border-radius: 15px;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+        overflow: hidden;
+        padding: 30px;
+    }
+
+    .profile-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 2px solid #ddd;
+        padding-bottom: 10px;
+        margin-bottom: 20px;
+    }
+
+    .profile-header h2 {
+        color: #434343;
+        font-weight: 700;
+    }
+
+    .profile-info {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+    }
+
+    .info-block {
+        background: white;
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+    }
+
+    .info-block strong {
+        display: block;
+        color: #896C6C;
+        font-size: 14px;
+        margin-bottom: 5px;
+    }
+
+    .info-block span {
+        font-size: 16px;
+        font-weight: 500;
+        color: #333;
+    }
+
+    .profile-actions {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 25px;
+    }
+
+    .btn-gradient {
+        background: linear-gradient(to right, #EEE6CA, #F5FAE1);
+        border: none;
+        color: black;
+        font-weight: 600;
+        padding: 10px 25px;
+        border-radius: 10px;
+        transition: transform 0.3s, box-shadow 0.3s;
+        text-decoration: none;
+    }
+
+    .btn-gradient:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    }
+
+    .btn-outline {
+        background: white;
+        border: 2px solid #EEE6CA;
+    }
+</style>
+
+<div class="profile-container">
+    <div class="profile-card">
+        <div class="profile-header">
+            <h2>Welcome, @Model.FirstName!</h2>
+            <span class="text-muted">Customer ID: @Model.CustomerId</span>
+        </div>
+
+        <div class="profile-info">
+            <div class="info-block">
+                <strong>First Name</strong>
+                <span>@Model.FirstName</span>
+            </div>
+            <div class="info-block">
+                <strong>Last Name</strong>
+                <span>@Model.LastName</span>
+            </div>
+            <div class="info-block">
+                <strong>Email</strong>
+                <span>@Model.Email</span>
+            </div>
+            <div class="info-block">
+                <strong>Username</strong>
+                <span>@Model.Username</span>
+            </div>
+            <div class="info-block">
+                <strong>Shipping Address</strong>
+                <span>@Model.ShippingAddress</span>
+            </div>
+            <div class="info-block">
+                <strong>Customer Type</strong>
+                <span>@Model.CustomerType</span>
+            </div>
+        </div>
+
+        <div class="profile-actions">
+            <a asp-action="EditProfile" asp-route-partitionKey="@Model.PartitionKey" asp-route-rowKey="@Model.RowKey" class="btn-gradient">
+                Edit My Details
+            </a>
+            <a asp-controller="Home" asp-action="CustomerDashboard" class="btn-gradient btn-outline">Back to Home</a>
+        </div>
+    </div>
+</div>

@@ -1,13 +1,16 @@
-﻿using Azure.Data.Tables;
-using Azure.Storage.Blobs;
-using Azure.Storage.Queues;
-using Azure.Storage.Files.Shares;
+﻿using System.Text.Json;
+using ABC_Retailers.Data;
 using ABC_Retailers.Models;
-using System.Text.Json;
+using Azure.Data.Tables;
+using Azure.Storage.Blobs;
+using Azure.Storage.Files.Shares;
+using Azure.Storage.Queues;
+using Microsoft.EntityFrameworkCore;
 
 
 namespace ABC_Retailers.Azure_Services
 {
+    //https://abcretailsfunctions-exdcghdvejcjgxc2.canadacentral-01.azurewebsites.net/api
     public class AzureStorageService : IAzureStorageService
     {
         private readonly TableServiceClient _tableServiceClient;
@@ -16,10 +19,14 @@ namespace ABC_Retailers.Azure_Services
         private readonly ShareServiceClient _shareServiceClient;
         private readonly ILogger<AzureStorageService> _logger;
 
+        private readonly RetailersDbContext _dbContext;
+
         public AzureStorageService(
             IConfiguration configuration,
-            ILogger<AzureStorageService> logger)
+            ILogger<AzureStorageService> logger,
+            RetailersDbContext dbContext) // ✅ add this
         {
+            _dbContext = dbContext;
             string connectionString = configuration.GetConnectionString("AzureStorage")
                 ?? throw new InvalidOperationException("Azure Storage connection string not found");
 
@@ -32,6 +39,7 @@ namespace ABC_Retailers.Azure_Services
             InitializeStorageAsync().Wait();
         }
 
+
         public async Task InitializeStorageAsync()
         {
             try
@@ -43,6 +51,8 @@ namespace ABC_Retailers.Azure_Services
                 await _tableServiceClient.CreateTableIfNotExistsAsync("ProductDetails");
                 await _tableServiceClient.CreateTableIfNotExistsAsync("Orders");
                 await _tableServiceClient.CreateTableIfNotExistsAsync("Notifications");
+                await _tableServiceClient.CreateTableIfNotExistsAsync("ProductCatalog");
+
 
                 _logger.LogInformation("Tables created successfully");
 
@@ -84,6 +94,24 @@ namespace ABC_Retailers.Azure_Services
         }
 
         // Table Operations
+        public async Task<Products?> GetProductByIdAsync(string productId)
+        {
+            try
+            {
+                // Assuming Products table uses a fixed PartitionKey, e.g. "Products"
+                string partitionKey = "Products";
+
+                var product = await GetEntityAsync<Products>(partitionKey, productId);
+                return product;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error fetching product by ID: {ex.Message}");
+                return null;
+            }
+        }
+
+
         public async Task<List<T>> GetAllEntitiesAsync<T>() where T : class, ITableEntity, new()
         {
             var tableName = GetTableName<T>();
@@ -276,6 +304,99 @@ namespace ABC_Retailers.Azure_Services
 
             return memoryStream.ToArray();
         }
+
+        // --- SQL CART OPERATIONS (using Entity Framework) ---
+
+        public async Task AddToCartAsync(Cart cart)
+        {
+            if (cart == null)
+                throw new ArgumentNullException(nameof(cart));
+
+            _dbContext.Cart.Add(cart);
+            await _dbContext.SaveChangesAsync();
+            _logger.LogInformation($"Product {cart.ProductId} added to cart for {cart.CustomerUsername}");
+        }
+
+        public async Task<IEnumerable<Cart>> GetCartItemsByUserAsync(string username)
+        {
+            if (string.IsNullOrWhiteSpace(username))
+                throw new ArgumentException("Username cannot be null or empty", nameof(username));
+
+            var items = await _dbContext.Cart
+                .Where(c => c.CustomerUsername == username)
+                .ToListAsync();
+
+            return items;
+        }
+
+        public async Task PlaceOrderFromCartAsync(string username)
+        {
+            if (string.IsNullOrWhiteSpace(username))
+                throw new ArgumentException("Username cannot be null or empty", nameof(username));
+
+            var cartItems = await _dbContext.Cart
+                .Where(c => c.CustomerUsername == username)
+                .ToListAsync();
+
+            if (!cartItems.Any())
+                throw new InvalidOperationException("Cart is empty.");
+
+            var catalogProducts = await GetAllEntitiesAsync<ProductCatalog>();
+
+            // 🪄 create a separate Order entry per product
+            foreach (var cartItem in cartItems)
+            {
+                var product = catalogProducts.FirstOrDefault(p => p.RowKey == cartItem.ProductId);
+                if (product != null)
+                {
+                    var order = new Orders
+                    {
+                        PartitionKey = username,
+                        RowKey = Guid.NewGuid().ToString(),
+                        CustomerId = username,
+                        Username = username,
+                        ProductId = product.RowKey,
+                        ProductName = product.ProductName,
+                        Quantity = cartItem.Quantity,
+                        UnitPrice = product.Price,
+                        TotalPrice = product.Price * cartItem.Quantity,
+                        OrderDate = DateTime.UtcNow,
+                        Status = "Placed"
+                    };
+
+                    await AddEntityAsync(order);
+                }
+            }
+
+            // clear the SQL cart
+            _dbContext.Cart.RemoveRange(cartItems);
+            await _dbContext.SaveChangesAsync();
+
+            // send queue notification for the new order batch
+            var message = JsonSerializer.Serialize(new
+            {
+                PartitionKey = username,
+                RowKey = Guid.NewGuid().ToString()
+            });
+
+            await SendMessageAsync("order-notifications", message);
+            _logger.LogInformation($"✅ Orders placed successfully for {username} ({cartItems.Count} items).");
+        }
+
+
+        public async Task DeleteCartItem(int cartId)
+        {
+            var item = await _dbContext.Cart.FirstOrDefaultAsync(c => c.Id == cartId);
+            if (item != null)
+            {
+                _dbContext.Cart.Remove(item);
+                await _dbContext.SaveChangesAsync();
+            }
+        }
+
+        
+
+
 
         private static string GetTableName<T>()
         {

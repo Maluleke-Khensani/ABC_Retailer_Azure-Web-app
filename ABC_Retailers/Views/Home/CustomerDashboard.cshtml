@@ -1,0 +1,176 @@
+﻿@model ABC_Retailers.Models.ViewModels.HomeViewModel
+@{
+    ViewData["Title"] = "Customer Dashboard";
+    var username = User.Identity?.Name ?? "Customer";
+}
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
+<style>
+    body {
+        background-color: #F3F3F3;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    .navbar {
+        background-color: #EEE6CA;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .nav-link, .navbar-brand {
+        color: #333 !important;
+        font-weight: 600;
+    }
+
+        .nav-link:hover {
+            color: #BE9A60 !important;
+        }
+
+    .btn-gradient {
+        background: linear-gradient(to right, #EEE6CA, #F5FAE1);
+        color: black;
+        font-weight: 600;
+        padding: 10px 24px;
+        border-radius: 10px;
+        border: none;
+        transition: transform 0.3s, box-shadow 0.3s;
+    }
+
+        .btn-gradient:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+        }
+
+    .hero-section {
+        background: linear-gradient(135deg, #E5BEB5, #896C6C);
+        color: white;
+        border-radius: 16px;
+        padding: 60px 20px;
+        text-align: center;
+        margin-bottom: 40px;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+    }
+
+    .product-card {
+        border: none;
+        border-radius: 12px;
+        transition: transform 0.3s, box-shadow 0.3s;
+    }
+
+        .product-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 8px 18px rgba(0, 0, 0, 0.15);
+        }
+
+    .notification-bell {
+        position: relative;
+    }
+
+        .notification-bell .badge {
+            position: absolute;
+            top: 0;
+            right: 0;
+            font-size: 0.6rem;
+            background-color: #B9375E;
+            color: white;
+        }
+
+    footer {
+        background-color: #EEE6CA;
+        color: #444;
+        padding: 15px;
+        border-top: 1px solid #ddd;
+        margin-top: 50px;
+    }
+</style>
+
+<!-- ✨ Customer Navigation -->
+<nav class="navbar navbar-expand-lg">
+    <div class="container">
+        <a class="navbar-brand fw-bold" href="#">ABC Retailers</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto align-items-center">
+                <li class="nav-item">
+                    <a class="nav-link" asp-controller="Customers" asp-action="MyProfile">My Profile</a>
+                </li>
+                <li class="nav-item"><a class="nav-link" asp-controller="ProductCatalog" asp-action="Index">Products</a></li>
+                <li class="nav-item"><a class="nav-link" asp-controller="Orders" asp-action="Index">My Orders</a></li>
+                <li class="nav-item notification-bell">
+                    <a class="nav-link position-relative" asp-controller="Notifications" asp-action="Index">
+                        <i class="fas fa-bell fa-lg"></i>
+                        <span class="badge rounded-pill">3</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <form asp-controller="Login" asp-action="Logout" method="post" class="d-inline">
+                        <button type="submit" class="btn btn-link nav-link text-dark p-0" style="text-decoration:none;">
+                            Logout
+                        </button>
+                    </form>
+                </li>
+               
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<!-- Hero Section -->
+<div class="container">
+    <div class="hero-section">
+        <h1 class="fw-bold mb-3">Welcome back, @username 👋</h1>
+        <p class="lead">Here’s what’s new today at ABC Retailers — explore, shop, and stay updated.</p>
+        <a class="btn btn-gradient mt-3" asp-controller="ProductCatalog" asp-action="Index">Browse Products</a>
+    </div>
+</div>
+
+<!-- Featured Products -->
+<div class="container">
+    <h3 class="fw-bold mb-4 text-dark">✨ Recommended For You</h3>
+    <div class="row g-4">
+        @if (Model.FeaturedProducts == null || !Model.FeaturedProducts.Any())
+        {
+            <div class="col-12 text-center text-muted">No products to display right now.</div>
+        }
+        else
+        {
+            @foreach (var p in Model.FeaturedProducts)
+            {
+                <div class="col-md-4 col-lg-3">
+                    <div class="card product-card h-100 shadow-sm">
+                        @if (!string.IsNullOrEmpty(p.ImageUrl))
+                        {
+                            <img src="@p.ImageUrl" class="card-img-top rounded-top" style="height:180px; object-fit:contain;" />
+                        }
+                        else
+                        {
+                            <div class="bg-light d-flex align-items-center justify-content-center" style="height:180px;">
+                                <i class="fas fa-image fa-2x text-muted"></i>
+                            </div>
+                        }
+
+                        <div class="card-body text-center">
+                            <h6 class="fw-bold">@p.ProductName</h6>
+                            <p class="text-muted mb-2">@p.Category</p>
+                            <p class="fw-semibold text-primary">@p.Price.ToString("C")</p>
+                            <a asp-controller="ProductCatalog" asp-action="Details"
+                               asp-route-category="@p.Category" asp-route-productName="@p.ProductName"
+                               class="btn btn-gradient btn-sm">View Details</a>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+    </div>
+</div>
+
+<!-- Footer -->
+<footer class="text-center">
+    &copy; @DateTime.Now.Year ABC Retailers | Customer Dashboard
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>

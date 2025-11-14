@@ -1,0 +1,87 @@
+﻿@using Microsoft.AspNetCore.Http
+@inject IHttpContextAccessor HttpContextAccessor
+
+@{
+    var username = HttpContextAccessor.HttpContext?.Session.GetString("UserId");
+}
+
+<nav class="navbar">
+    <div class="brand">
+        <a asp-controller="Home" asp-action="CustomerHome">ABC Retailer</a>
+    </div>
+
+    <ul class="nav-links">
+        <li> <a asp-controller="Home" asp-action="CustomerDashboard">Dashboard</a></li>
+        <li><a asp-controller="Notifications" asp-action="Index">Notifications</a></li>
+        <li><a asp-controller="Customers" asp-action="MyProfile">My Profile</a></li>
+        <li><a asp-controller="ProductCatalog" asp-action="Index">Browse Products</a></li>
+        <li><a asp-controller="Cart" asp-action="Index">My Cart</a></li>
+        <li><a asp-controller="Orders" asp-action="Index">My Orders</a></li>
+        <li><a asp-controller="Home" asp-action="Contact">Contact Us</a></li>
+        <li><a asp-controller="Home" asp-action="Privacy">Privacy Policy</a></li>
+
+    </ul>
+   
+    <div class="user-info">
+        <form asp-controller="Login" asp-action="Logout" method="post" class="d-inline">
+            <button type="submit" class="btn btn-link nav-link text-dark p-0" style="text-decoration:none;">
+                Logout
+            </button>
+        </form>
+    </div>
+</nav>
+
+<style>
+    .navbar {
+        background: #DCDCDC;
+        padding: 12px 24px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        box-shadow: 0 1px 5px rgba(0,0,0,0.1);
+    }
+
+    .brand a {
+        text-decoration: none;
+        color: #B9375E;
+        font-size: 22px;
+        font-weight: 700;
+    }
+
+    .nav-links {
+        list-style: none;
+        display: flex;
+        gap: 20px;
+        margin: 0;
+    }
+
+        .nav-links a {
+            text-decoration: none;
+            color: #434343;
+            font-weight: 600;
+        }
+
+            .nav-links a:hover {
+                color: #BE9A60;
+            }
+
+    .user-info {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: #434343;
+        font-weight: 600;
+    }
+
+    .logout-btn {
+        background: #B9375E;
+        color: white;
+        padding: 6px 12px;
+        border-radius: 6px;
+        text-decoration: none;
+    }
+
+        .logout-btn:hover {
+            background: #9f2f50;
+        }
+</style>

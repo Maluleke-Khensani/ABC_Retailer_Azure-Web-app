@@ -1,217 +1,277 @@
-﻿@using Azure.Core
-@model Dictionary<string, List<ABC_Retailers.Models.ProductCatalog>>
+﻿@model Dictionary<string, List<ABC_Retailers.Models.ProductCatalog>>
+@using Microsoft.AspNetCore.Http
+@inject IHttpContextAccessor HttpContextAccessor
 
 @{
-    ViewBag.Title = "Product Catalog";
+    var user = HttpContextAccessor.HttpContext?.User;
+    if (user != null && user.IsInRole("Admin"))
+    {
+        Layout = "_LayoutAdmin";
+    }
+    else
+    {
+        Layout = "_LayoutCustomer";
+    }
 }
 
+@{
+    ViewData["Title"] = "Product Catalog";
+}
 <style>
-    html, body {
-        height: 100%;
-        margin: 0;
-        background: #F2F2F2;
-        color: #434343;
-        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-        box-sizing: border-box;
+    .catalog-header {
+        background-color: #434343;
+        color: white;
+        border-radius: 8px;
+        padding: 16px 24px;
+        margin-bottom: 24px;
     }
 
-    *, *::before, *::after {
-        box-sizing: inherit;
-    }
-
-    /* Shared topbar style */
-    .simple-topbar {
+    .header-top {
         display: flex;
-        align-items: center;
         justify-content: space-between;
-        gap: 12px;
-        background: #DCDCDC;
-        padding: 12px 16px;
-        border-radius: 8px;
-        margin: 18px;
-    }
-
-    .brand {
-        display: flex;
         align-items: center;
-        gap: 10px;
+        margin-bottom: 12px;
     }
 
-    .logo-wrap {
-        width: 44px;
-        height: 44px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: #fff;
-        border-radius: 8px;
-        border: 2px solid #BE9A60;
-    }
+        .header-top h1 {
+            font-size: 26px;
+            color: #BE9A60;
+            margin: 0;
+        }
 
-    .logo-svg {
-        width: 28px;
-        height: 28px;
-    }
-
-    .stat {
-        text-align: center;
-        min-width: 140px;
-        background: #fff;
-        padding: 8px 12px;
+    .btn-add {
+        background: #BE9A60;
+        color: white;
+        font-weight: 600;
         border-radius: 6px;
+        padding: 6px 12px;
+        text-decoration: none;
     }
 
-        .stat .label {
-            font-size: 12px;
-            color: #666;
-        }
-
-        .stat .value {
-            font-size: 20px;
-            font-weight: 700;
-            color: #B9375E;
-        }
-
-    /* Grid for products */
-    .product-section {
-        margin: 0 18px 24px 18px;
+    .header-bottom {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 12px;
     }
 
-    .product-grid {
+    .fade-out {
+        transition: opacity 0.6s ease-out;
+    }
+
+        .fade-out.hide {
+            opacity: 0;
+        }
+
+    .search-bar {
+        display: flex;
+        gap: 8px;
+    }
+
+        .search-bar input {
+            padding: 6px 10px;
+            border-radius: 6px;
+            border: none;
+        }
+
+        .search-bar button, .btn-reset {
+            background: #BE9A60;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 6px 12px;
+            cursor: pointer;
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+    .btn-cart-icon {
+        background: none;
+        border: none;
+        cursor: pointer;
+        margin-left: 6px;
+    }
+
+    .cart-count {
+        position: absolute;
+        top: -6px;
+        right: -8px;
+        background: #B9375E;
+        color: white;
+        font-size: 12px;
+        padding: 2px 6px;
+        border-radius: 50%;
+    }
+
+    .btn-cart-icon {
+        background: none;
+        border: none;
+        cursor: pointer;
+        margin-left: 6px;
+    }
+
+    .product-container {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-        gap: 18px;
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        gap: 20px;
     }
 
     .product-card {
         background: #fff;
-        border-radius: 8px;
-        padding: 10px;
-        box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
+        border-radius: 12px;
+        padding: 16px;
+        text-align: center;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     }
 
         .product-card img {
-            height: 150px;
+            width: 100%;
+            height: 180px;
             object-fit: contain;
-            margin-bottom: 10px;
+            border-radius: 8px;
         }
-
-        .product-card h6 {
-            font-weight: 700;
-            margin: 0 0 4px 0;
-            font-size: 15px;
-            color: #434343;
-        }
-
-        .product-card p {
-            margin: 0 0 4px 0;
-            font-size: 13px;
-            color: #666;
-        }
-
-    .price {
-        font-weight: 700;
-        color: #BE9A60;
-    }
 
     .btn-view {
-        display: block;
-        text-align: center;
-        padding: 6px;
+        background: #BE9A60;
+        color: white;
+        padding: 6px 10px;
         border-radius: 6px;
-        background: #B9375E;
-        color: #fff;
-        font-weight: 600;
         text-decoration: none;
-        font-size: 13px;
-        margin-top: 8px;
+        font-weight: 600;
     }
 </style>
 
-<div style="margin: 18px;">
-    <form method="get" asp-action="Index" class="search-form" style="display:flex; gap: 8px;">
-        <input type="text" name="search"
-               value="@ViewContext.HttpContext.Request.Query["search"]"
-               placeholder="Search products..."
-               style="padding:8px; width:250px; border-radius:4px; border:1px solid #ccc;" />
-        <button type="submit" style="padding:8px 12px; border-radius:4px; border:none; background:#B9375E; color:#fff;">
-            Search
-        </button>
-        <a href="@Url.Action("Index", "ProductCatalog")"
-           style="padding:8px 12px; border-radius:4px; border:none; background:#666; color:#fff; text-decoration:none; display:flex; align-items:center;">
-            Reset
-        </a>
-    </form>
+<div class="catalog-header">
+    <div class="header-top">
+        <h1>🛍️ ABC Retailers</h1>
+        @if (User.IsInRole("Admin"))
+        {
+            <a asp-action="Create" class="btn-add">+ Add Product</a>
+        }
+    </div>
+    <div class="header-bottom">
+        <form asp-action="Index" method="get" class="search-bar">
+            <input type="text" name="search" placeholder="Search products..." value="@ViewBag.SearchQuery" />
+            <button type="submit">Search</button>
+            <a asp-action="Index" class="btn-reset">Reset</a>
+        </form>
+
+        @if (!User.IsInRole("Admin"))
+        {
+            <div class="cart-section">
+                <a asp-controller="Cart" asp-action="Index" style="position:relative; text-decoration:none; color:white; font-size:22px;">
+                🛒
+                <span class="cart-count" style="
+            position:absolute;
+            top:-10px;
+            right:-12px;
+            background:#B9375E;
+            color:white;
+            font-size:14px;
+            padding:4px 8px;
+            border-radius:50%;
+        ">
+                    @ViewBag.CartCount ?? 0
+                </span>
+            </a>
+        </div>
+}
+    </div>
 </div>
 
+@if (TempData["Message"] != null)
+{
+    <div class="alert alert-success fade-out">@TempData["Message"]</div>
+}
 
-
-<div class="product-page">
-
-    <!-- Reusable top bar -->
-    <div class="simple-topbar">
-        <div class="brand">
-            <div class="logo-wrap" aria-hidden="true">
-                <svg class="logo-svg" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
-                    <rect x="20" y="16" width="24" height="26" rx="4" fill="#B9375E" />
-                    <rect x="26" y="6" width="4" height="8" rx="1" fill="#B9375E" />
-                    <rect x="34" y="6" width="4" height="8" rx="1" fill="#B9375E" />
-                    <path d="M 18 44 q 14 12 28 0" stroke="#B9375E" stroke-width="3" fill="none" stroke-linecap="round" />
-                </svg>
-            </div>
-            <div>
-                <div style="font-weight:700;color:#434343;">ABC Retailer</div>
-                <div style="font-size:12px;color:#BE9A60;">Electronics &amp; Gadgets</div>
-            </div>
-        </div>
-
-        <!-- total products -->
-        <div class="stat">
-            <div class="label">Total Products</div>
-            <div class="value">
-                @Model.Values.Sum(list => list.Count)
-            </div>
-        </div>
-    </div>
-
-    <!-- Products -->
-    <div class="product-section">
-        @if (!Model.Any() || Model.Values.All(list => !list.Any()))
+@foreach (var category in Model)
+{
+    <h3>@category.Key</h3>
+    <div class="product-container">
+        @foreach (var p in category.Value)
         {
-            <p class="no-items">No items found for your search.</p>
+            <div class="product-card">
+                <img src="@(!string.IsNullOrEmpty(p.ImageUrl) ? p.ImageUrl : "/images/placeholder.png")"
+                     alt="@p.ProductName" />
+
+                <h3>@p.ProductName</h3>
+                <p>@p.Description</p>
+                <p>@p.Price.ToString("C")</p>
+
+               
+    <a class="btn-view"
+       asp-action="Details"
+       asp-route-category="@p.Category"
+       asp-route-rowKey="@p.RowKey">
+        View
+    </a>
+
+                @if (!User.IsInRole("Admin"))
+                {
+    <button class="btn-cart-icon" data-productid="@p.RowKey" title="Add to Cart">
+        <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" fill="#BE9A60" class="bi bi-cart-plus" viewBox="0 0 16 16">
+            <path d="M8 7.5a.5.5 0 0 1 .5.5v1h1a.5.5 0 0 1 0 1h-1v1a.5.5 0 0 1-1 0v-1h-1a.5.5 0 0 1 0-1h1v-1a.5.5 0 0 1 .5-.5z" />
+            <path d="M0 1.5A.5.5 0 0 1 .5 1h1l1.4 4h11.6l-1.5 8H4L2 2H.5zM5 12a1 1 0 1 0 0 2 1 1 0 0 0 0-2zm6 1a1 1 0 1 1-2 0 1 1 0 0 1 2 0z" />
+        </svg>
+    </button>
+    }
+
+    @if (User.IsInRole("Admin"))
+    {
+        <div style="margin-top:8px;">
+            <a class="btn-view"
+               asp-action="Edit"
+               asp-route-partitionKey="@p.PartitionKey"
+               asp-route-rowKey="@p.RowKey"
+               style="background:#BE9A60;">Edit</a>
+
+            <a class="btn-view"
+               asp-action="Delete"
+               asp-route-partitionKey="@p.PartitionKey"
+               asp-route-rowKey="@p.RowKey"
+               style="background:#B9375E;">Delete</a>
+        </div>
+    }
+</div>
+
         }
-        else
-        {
-            @foreach (var categoryGroup in Model)
-            {
-                <h3 style="color:#434343; margin-top:20px;">@categoryGroup.Key</h3>
-                <hr />
-                <div class="product-grid">
-                    @foreach (var product in categoryGroup.Value)
-                    {
-                        <div class="product-card">
-                            <img src="@(!string.IsNullOrEmpty(product.ImageUrl) ? product.ImageUrl : "/images/placeholder.png")"
-                                 alt="@product.ProductName" />
+    </div>
+}
 
-                            <div>
-                                <h6>@product.ProductName</h6>
-                                <p>@product.Description</p>
-                                <p class="price">@product.Price.ToString("C")</p>
-                            </div>
+<script>
+     setTimeout(() => {
+         document.querySelectorAll('.fade-out').forEach(el => {
+             el.classList.add('hide');
+             setTimeout(() => el.style.display = 'none', 600);
+         });
+     }, 3000);
 
-                            <a class="btn-view"
-                               asp-action="Details"
-                               asp-route-category="@product.Category"
-                               asp-route-productName="@product.ProductName">
-                                View Details
-                            </a>
-                        </div>
-                    }
-                </div>
+
+           document.querySelectorAll('.btn-cart-icon').forEach(button => {
+        button.addEventListener('click', async () => {
+            const productId = button.getAttribute('data-productid');
+
+            const response = await fetch('/Cart/Add', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ productId, quantity: 1 })
+            });
+
+            if (response.ok) {
+                // Update cart badge instantly
+                let countElem = document.querySelector('.cart-count');
+                if (countElem) {
+                    countElem.textContent = parseInt(countElem.textContent) + 1;
+                }
+                alert('✅ Product added to cart!');
+            } else {
+                alert('❌ Failed to add product to cart.');
             }
-        }
-    </div>
-</div>
+        });
+    });
+
+
+</script>
+
+

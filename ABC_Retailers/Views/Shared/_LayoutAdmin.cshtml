@@ -1,0 +1,28 @@
+﻿@{
+    Layout = null;
+}
+<link rel="stylesheet" href="~/css/product-pages.css" />
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Admin Panel</title>
+    <link rel="stylesheet" href="~/css/site.css" />
+</head>
+<body style="background-color:#F7F7F7; font-family:'Segoe UI'; margin:0; color:#333;">
+    <!-- 💼 Admin Navigation -->
+    @await Html.PartialAsync("_AdminNavbar")
+
+    <main role="main" class="container" style="padding: 20px;">
+        @RenderBody()
+    </main>
+
+    <footer style="text-align:center; padding:12px; background:#E6E6E6; color:#333; margin-top:40px;">
+        &copy; @DateTime.Now.Year - ABC Retailer | Admin Dashboard
+    </footer>
+
+    @RenderSection("Scripts", required: false)
+</body>
+</html>

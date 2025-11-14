@@ -11,12 +11,19 @@ public class FunctionsApi : IFunctionsApi
     private readonly string _functionBaseUrl;
     private readonly string _sendToQueueKey;
     private readonly string _uploadImageKey;
+    private readonly string _productsFunctionKey;
+    private readonly string _uploadFileKey;
+
 
     public FunctionsApi(HttpClient httpClient, ILogger<FunctionsApi> logger, IConfiguration configuration)
     {
         _functionBaseUrl = configuration["FunctionSettings:BaseUrl"];
         _sendToQueueKey = configuration["FunctionSettings:SendToQueueKey"];
         _uploadImageKey = configuration["FunctionSettings:UploadImageKey"];
+        _productsFunctionKey = configuration["FunctionSettings:ProductsFunctionKey"]; 
+        _uploadFileKey = configuration["FunctionSettings:UploadFileKey"]; 
+
+
 
         _httpClient = httpClient;
         _httpClient.BaseAddress = new Uri(_functionBaseUrl);
@@ -28,7 +35,7 @@ public class FunctionsApi : IFunctionsApi
         if (customer == null)
             throw new ArgumentNullException(nameof(customer), "Customer cannot be null");
 
-        string functionUrl = "customers";
+        string functionUrl = $"customers?code={_productsFunctionKey}";
 
         var json = JsonSerializer.Serialize(customer, new JsonSerializerOptions
         {
@@ -50,17 +57,48 @@ public class FunctionsApi : IFunctionsApi
         _logger.LogInformation("Customer created successfully via function.");
     }
 
-    public async Task<List<ProductCatalog>> GetProductsAsync(string? query = null)
+    public async Task<Customers> GetCustomerByUsernameAsync(string username)
     {
-        var url = "products";
-        if (!string.IsNullOrEmpty(query))
-            url += $"?q={Uri.EscapeDataString(query)}";
+        if (string.IsNullOrWhiteSpace(username))
+            throw new ArgumentException("Username cannot be null or empty", nameof(username));
+
+        string url = $"customers/{Uri.EscapeDataString(username)}";
+        _logger.LogInformation($"Fetching customer by username: {username}");
 
         var response = await _httpClient.GetAsync(url);
-        response.EnsureSuccessStatusCode();
+        if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            _logger.LogWarning($"Customer '{username}' not found.");
+            return null!;
+        }
 
-        return await response.Content.ReadFromJsonAsync<List<ProductCatalog>>() ?? new List<ProductCatalog>();
+        response.EnsureSuccessStatusCode();
+        var customer = await response.Content.ReadFromJsonAsync<Customers>();
+
+        if (customer == null)
+            _logger.LogWarning($"Customer data for '{username}' was empty.");
+
+        return customer!;
     }
+
+    public async Task GetCustomerAsync(string customerId)
+    {
+        if (string.IsNullOrWhiteSpace(customerId))
+            throw new ArgumentException("CustomerId cannot be null or empty", nameof(customerId));
+
+        var url = $"customers/{Uri.EscapeDataString(customerId)}";
+        var response = await _httpClient.GetAsync(url);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var error = await response.Content.ReadAsStringAsync();
+            throw new Exception($"Failed to fetch customer: {response.StatusCode} - {error}");
+        }
+
+    }
+
+
+
 
     public async Task SendProductUpdateAsync(ProductCatalog product)
     {
@@ -85,6 +123,7 @@ public class FunctionsApi : IFunctionsApi
             throw new Exception($"Function error: {message}");
         }
     }
+
 
     public async Task<string> UploadProductImageAsync(IFormFile file)
     {
@@ -116,6 +155,7 @@ public class FunctionsApi : IFunctionsApi
 
         throw new Exception("Function did not return ImageUrl");
     }
+
 
     public async Task CreateProductAsync(Products product)
     {
@@ -156,6 +196,7 @@ public class FunctionsApi : IFunctionsApi
         _logger.LogInformation("Product created successfully via function.");
     }
 
+
     public async Task CreateOrderAsync(Orders order)
     {
         if (order == null)
@@ -178,24 +219,44 @@ public class FunctionsApi : IFunctionsApi
         Console.WriteLine("Order sent successfully.");
     }
 
+
     public async Task<string> UploadFileToShareAsync(IFormFile file)
     {
         using var content = new MultipartFormDataContent();
         using var stream = file.OpenReadStream();
         var fileContent = new StreamContent(stream);
-        fileContent.Headers.ContentType =
-            new MediaTypeHeaderValue(file.ContentType);
-
+        fileContent.Headers.ContentType = new MediaTypeHeaderValue(file.ContentType ?? "application/octet-stream");
         content.Add(fileContent, "file", file.FileName);
 
-        var response = await _httpClient.PostAsync("files/upload", content);
+        var functionUrl = $"files/upload?code={_uploadFileKey}";
+        var response = await _httpClient.PostAsync(functionUrl, content);
 
         if (response.IsSuccessStatusCode)
-        {
             return await response.Content.ReadAsStringAsync();
-        }
 
         var error = await response.Content.ReadAsStringAsync();
         return $"Error: {response.StatusCode} - {error}";
+    }
+
+
+
+    public async Task<Orders> GetOrderByCustomerIdAsync(string customerId)
+    {
+        if (string.IsNullOrWhiteSpace(customerId))
+            throw new ArgumentException("CustomerId cannot be null or empty", nameof(customerId));
+
+        string url = $"orders/{Uri.EscapeDataString(customerId)}";
+        _logger.LogInformation($"Fetching order for customer ID: {customerId}");
+
+        var response = await _httpClient.GetAsync(url);
+        if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            _logger.LogWarning($"No order found for customer ID: {customerId}");
+            return null!;
+        }
+
+        response.EnsureSuccessStatusCode();
+        var order = await response.Content.ReadFromJsonAsync<Orders>();
+        return order!;
     }
 }

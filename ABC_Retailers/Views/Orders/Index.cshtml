@@ -1,21 +1,36 @@
 ﻿@model IEnumerable<ABC_Retailers.Models.Orders>
+@using Microsoft.AspNetCore.Http
+@inject IHttpContextAccessor HttpContextAccessor
 
-@{
-    ViewBag.Title = "Orders";
+
+@if (TempData["Message"] != null)
+{
+    <div class="alert alert-success fade-out">@TempData["Message"]</div>
 }
 
-<Style>
+
+
+@{
+    var user = HttpContextAccessor.HttpContext?.User;
+    bool isAdmin = user?.IsInRole("Admin") ?? false;
+    Layout = isAdmin ? "_LayoutAdmin" : "_LayoutCustomer";
+
+    ViewBag.Title = isAdmin ? "Manage All Orders" : "My Orders";
+
+    var placed = Model.Where(o => o.Status.Trim() == "Placed").ToList();
+    var processing = Model.Where(o => o.Status.Trim() == "Processing").ToList();
+    var processed = Model.Where(o => o.Status.Trim() == "Processed").ToList();
+    var cancelled = Model.Where(o => o.Status.Trim() == "Cancelled").ToList();
+}
+
+
+<style>
     html, body {
         height: 100%;
         margin: 0;
         background: #F2F2F2;
         color: #434343;
         font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-        box-sizing: border-box;
-    }
-
-    *, *::before, *::after {
-        box-sizing: inherit;
     }
 
     .simple-topbar {
@@ -29,157 +44,463 @@
         margin: 18px;
     }
 
-        .simple-topbar .brand {
-            display: flex;
-            align-items: center;
-            gap: 10px;
+    /* Tab Styles */
+    .tabs-container {
+        margin: 18px;
+    }
+
+    .tabs-header {
+        display: flex;
+        border-bottom: 2px solid #ddd;
+        margin-bottom: 20px;
+    }
+
+    .tab-button {
+        padding: 12px 24px;
+        background: none;
+        border: none;
+        border-bottom: 3px solid transparent;
+        cursor: pointer;
+        font-weight: 600;
+        color: #666;
+        transition: all 0.3s;
+    }
+
+        .tab-button.active {
+            color: #434343;
+            border-bottom: 3px solid #BE9A60;
+            background: #f8f9fa;
         }
 
-    .logo-wrap {
-        width: 44px;
-        height: 44px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: #fff;
-        border-radius: 8px;
-        border: 2px solid #BE9A60;
+        .tab-button:hover {
+            background: #f8f9fa;
+        }
+
+    .tab-content {
+        display: none;
     }
 
-    .logo-svg {
-        width: 28px;
-        height: 28px;
-    }
+        .tab-content.active {
+            display: block;
+        }
 
-    .simple-topbar .stat {
-        text-align: center;
-        min-width: 140px;
-        background: #fff;
-        padding: 8px 12px;
-        border-radius: 6px;
-    }
-
-    .stat .label {
-        font-size: 12px;
-        color: #666;
-    }
-
-    .stat .value {
-        font-size: 24px;
-        font-weight: 700;
-        color: #B9375E;
-    }
-
-    .simple-topbar .actions {
-        display: flex;
-        gap: 8px;
-        align-items: center;
-    }
-
-    .btn {
-        display: inline-block;
-        padding: 8px 12px;
-        border-radius: 8px;
-        text-decoration: none;
-        font-weight: 600;
-    }
-
-    .btn-add {
-        background: #BE9A60;
-        color: #fff;
-    }
-
-    .table-container {
-        margin: 0 18px 24px 18px;
-        overflow-x: auto;
-    }
-
+    /* Table Styles */
     .orders-table {
         width: 100%;
         border-collapse: collapse;
         background: #fff;
-        border-radius: 6px;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        border: 1px solid #ddd;
     }
 
-        .orders-table th, .orders-table td {
-            padding: 10px 12px;
-            text-align: left;
-            border-bottom: 1px solid #F0E9E9;
-        }
-
-        .orders-table thead th {
+        .orders-table th {
             background: #434343;
             color: #fff;
-            font-weight: 700;
-            font-size: 13px;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 2px solid #ddd;
         }
-</Style>
+
+        .orders-table td {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .orders-table tr:hover {
+            background: #f8f9fa;
+        }
+
+    /* Enhanced Pastel badges */
+    .badge {
+        padding: 6px 12px;
+        font-size: 12px;
+        border-radius: 20px;
+        font-weight: 600;
+        color: #434343;
+        display: inline-block;
+        text-align: center;
+        min-width: 80px;
+    }
+
+    .badge-placed {
+        background: #B8E0D2; /* Light mint green */
+        border: 1px solid #9BD4C2;
+    }
+
+    .badge-processing {
+        background: #A6C1EE; /* Light blue */
+        border: 1px solid #95B2EA;
+    }
+
+    .badge-processed {
+        background: #C9E4DE; /* Light teal */
+        border: 1px solid #B8E0D2;
+    }
+
+    .badge-cancelled {
+        background: #E6B8D1; /* Light pink */
+        border: 1px solid #D89CBE;
+    }
+
+    /* Enhanced button styles */
+    .btn-view {
+        background: #A6C1EE;
+        color: #434343;
+        padding: 6px 12px;
+        border-radius: 4px;
+        text-decoration: none;
+        font-weight: 600;
+        border: 1px solid #95B2EA;
+        margin: 2px;
+        display: inline-block;
+        font-size: 12px;
+    }
+
+    .btn-process {
+        background: #B8E0D2;
+        color: #434343;
+        padding: 6px 12px;
+        border-radius: 4px;
+        text-decoration: none;
+        font-weight: 600;
+        border: 1px solid #9BD4C2;
+        margin: 2px;
+        display: inline-block;
+        font-size: 12px;
+    }
+
+    .btn-delete {
+        background: #E6B8D1;
+        color: #434343;
+        padding: 6px 12px;
+        border-radius: 4px;
+        text-decoration: none;
+        font-weight: 600;
+        border: 1px solid #D89CBE;
+        margin: 2px;
+        display: inline-block;
+        font-size: 12px;
+    }
+
+    .btn-view:hover {
+        background: #95B2EA;
+        color: #fff;
+    }
+
+    .btn-process:hover {
+        background: #9BD4C2;
+        color: #fff;
+    }
+
+    .btn-delete:hover {
+        background: #D89CBE;
+        color: #fff;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 4px;
+        flex-wrap: wrap;
+    }
+</style>
 
 <div class="orders-page">
 
     <!-- Top Bar -->
     <div class="simple-topbar">
-        <div class="brand">
-            <div class="logo-wrap" aria-hidden="true">
-                <svg class="logo-svg" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ABC Retailer">
-                    <rect x="20" y="16" width="24" height="26" rx="4" fill="#B9375E" />
-                    <rect x="26" y="6" width="4" height="8" rx="1" fill="#B9375E" />
-                    <rect x="34" y="6" width="4" height="8" rx="1" fill="#B9375E" />
-                    <path d="M 18 44 q 14 12 28 0" stroke="#B9375E" stroke-width="3" fill="none" stroke-linecap="round" />
-                </svg>
-            </div>
-            <div>
-                <div style="font-weight:700;color:#434343;">ABC Retailer</div>
-                <div style="font-size:12px;color:#BE9A60;">Electronics & Gadgets</div>
+        <div>
+            <h3 style="margin:0;">@ViewBag.Title</h3>
+            <div style="color:#BE9A60;font-size:13px;">
+                @(isAdmin ? "Administrator View" : "Customer View")
             </div>
         </div>
-
-        <div class="stat">
-            <div class="label">Total Orders</div>
-            <div class="value">@Model.Count()</div>
-        </div>
-
-        <div class="actions">
-            <a class="btn btn-add" href="@Url.Action("Create")">＋ Add Order</a>
+        <div>
+            <span style="font-weight:bold;">Total Orders:</span> @Model.Count()
         </div>
     </div>
 
-    <!-- Orders Table -->
-    <div class="table-container">
-        <table class="orders-table">
-            <thead>
-                <tr>
-                    <th>Order ID</th>
-                    <th>Customer</th>
-                    <th>Product</th>
-                    <th>Quantity</th>
-                    <th>Unit Price</th>
-                    <th>Total Price</th>
-                    <th>Status</th>
-                    <th>Order Date</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var order in Model)
-                {
-                    <tr>
-                        <td>@order.RowKey</td>
-                        <td>@order.Username (@order.CustomerId)</td>
-                        <td>@order.ProductName (@order.ProductId)</td>
-                        <td>@order.Quantity</td>
-                        <td>@order.UnitPrice.ToString("C")</td>
-                        <td>@order.TotalPrice.ToString("C")</td>
-                        <td>@order.Status</td>
-                        <td>@order.OrderDate.ToString("yyyy-MM-dd")</td>
-                        <td>
-                            <a asp-action="Details" asp-route-partitionKey="@order.PartitionKey" asp-route-rowKey="@order.RowKey">Details</a> |
-                            <a asp-action="Edit" asp-route-partitionKey="@order.PartitionKey" asp-route-rowKey="@order.RowKey">Edit</a>
-                            <!-- <a asp-action="Delete" asp-route-partitionKey="@order.PartitionKey" asp-route-rowKey="@order.RowKey">Delete</a>-->
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
+    <!-- Custom Tabs -->
+    <div class="tabs-container">
+        <div class="tabs-header">
+            <button class="tab-button active" onclick="showTab('placed')">Placed (@placed.Count)</button>
+            <button class="tab-button" onclick="showTab('processing')">Processing (@processing.Count)</button>
+            <button class="tab-button" onclick="showTab('processed')">Processed (@processed.Count)</button>
+            <button class="tab-button" onclick="showTab('cancelled')">Cancelled (@cancelled.Count)</button>
+        </div>
+
+        <!-- Placed Orders Tab -->
+        <div id="placed" class="tab-content active">
+            <h4>Placed Orders</h4>
+            @if (placed.Any())
+            {
+                <table class="orders-table">
+                    <thead>
+                        <tr>
+                            <th>Order ID</th>
+                            @if (isAdmin)
+                            {
+                                <th>Customer</th>
+                            }
+                            <th>Product</th>
+                            <th>Quantity</th>
+                            <th>Unit Price</th>
+                            <th>Subtotal</th>
+                            <th>Status</th>
+                            <th>Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var o in placed)
+                        {
+                            <tr>
+                                <td>@o.DisplayOrderId</td>
+                                @if (isAdmin)
+                                {
+                                    <td>@o.Username (@o.CustomerId)</td>
+                                }
+                                <td>@o.ProductName</td>
+                                <td>@o.Quantity</td>
+                                <td>@o.UnitPrice.ToString("C")</td>
+                                <td>@o.TotalPrice.ToString("C")</td>
+                                <td>
+                                    <span class="badge badge-placed">@o.Status</span>
+                                </td>
+                                <td>@o.OrderDate.ToLocalTime().ToString("yyyy-MM-dd")</td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <a asp-action="Details" asp-route-partitionKey="@o.PartitionKey" asp-route-rowKey="@o.RowKey" class="btn-view">View</a>
+                                        <a asp-action="Delete" asp-route-partitionKey="@o.PartitionKey" asp-route-rowKey="@o.RowKey" class="btn-view">Delete</a>
+
+                                        @if (isAdmin)
+                                        {
+                                            <form asp-action="ProcessOrder" method="post" style="display:inline;">
+                                                <input type="hidden" name="partitionKey" value="@o.PartitionKey" />
+                                                <input type="hidden" name="rowKey" value="@o.RowKey" />
+                                                <button type="submit" class="btn-process">Process Order</button>
+                                            </form>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <div style="text-align: center; padding: 40px; background: white; border-radius: 8px;">
+                    <p>No placed orders found</p>
+                </div>
+            }
+        </div>
+
+        <!-- Processing Orders Tab -->
+        <div id="processing" class="tab-content">
+            <h4>Processing Orders</h4>
+            @if (processing.Any())
+            {
+                <table class="orders-table">
+                    <thead>
+                        <tr>
+                            <th>Order ID</th>
+                            @if (isAdmin)
+                            {
+                                <th>Customer</th>
+                            }
+                            <th>Product</th>
+                            <th>Quantity</th>
+                            <th>Unit Price</th>
+                            <th>Subtotal</th>
+                            <th>Status</th>
+                            <th>Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var o in processing)
+                        {
+                            <tr>
+                                <td>@o.DisplayOrderId</td>
+                                @if (isAdmin)
+                                {
+                                    <td>@o.Username (@o.CustomerId)</td>
+                                }
+                                <td>@o.ProductName</td>
+                                <td>@o.Quantity</td>
+                                <td>@o.UnitPrice.ToString("C")</td>
+                                <td>@o.TotalPrice.ToString("C")</td>
+                                <td>
+                                    <span class="badge badge-processing">@o.Status</span>
+                                </td>
+                                <td>@o.OrderDate.ToLocalTime().ToString("yyyy-MM-dd")</td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <a asp-action="Details" asp-route-partitionKey="@o.PartitionKey" asp-route-rowKey="@o.RowKey" class="btn-view">View</a>
+                                        @if (isAdmin)
+                                        {
+                                            <form asp-action="ProcessOrder" method="post" style="display:inline;">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="partitionKey" value="@o.PartitionKey" />
+                                                <input type="hidden" name="rowKey" value="@o.RowKey" />
+                                                <button type="submit" class="btn-process">Mark Processed</button>
+                                            </form>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <div style="text-align: center; padding: 40px; background: white; border-radius: 8px;">
+                    <p>No processing orders found</p>
+                </div>
+            }
+        </div>
+
+        <!-- Processed Orders Tab -->
+        <div id="processed" class="tab-content">
+            <h4>Processed Orders</h4>
+            @if (processed.Any())
+            {
+                <table class="orders-table">
+                    <thead>
+                        <tr>
+                            <th>Order ID</th>
+                            @if (isAdmin)
+                            {
+                                <th>Customer</th>
+                            }
+                            <th>Product</th>
+                            <th>Quantity</th>
+                            <th>Unit Price</th>
+                            <th>Subtotal</th>
+                            <th>Status</th>
+                            <th>Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var o in processed)
+                        {
+                            <tr>
+                                <td>@o.DisplayOrderId</td>
+                                @if (isAdmin)
+                                {
+                                    <td>@o.Username (@o.CustomerId)</td>
+                                }
+                                <td>@o.ProductName</td>
+                                <td>@o.Quantity</td>
+                                <td>@o.UnitPrice.ToString("C")</td>
+                                <td>@o.TotalPrice.ToString("C")</td>
+                                <td>
+                                    <span class="badge badge-processed">@o.Status</span>
+                                </td>
+                                <td>@o.OrderDate.ToLocalTime().ToString("yyyy-MM-dd")</td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <a asp-action="Details" asp-route-partitionKey="@o.PartitionKey" asp-route-rowKey="@o.RowKey" class="btn-view">View</a>
+                                        
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <div style="text-align: center; padding: 40px; background: white; border-radius: 8px;">
+                    <p>No processed orders found</p>
+                </div>
+            }
+        </div>
+
+        <!-- Cancelled Orders Tab -->
+        <div id="cancelled" class="tab-content">
+            <h4>Cancelled Orders</h4>
+            @if (cancelled.Any())
+            {
+                <table class="orders-table">
+                    <thead>
+                        <tr>
+                            <th>Order ID</th>
+                            @if (isAdmin)
+                            {
+                                <th>Customer</th>
+                            }
+                            <th>Product</th>
+                            <th>Quantity</th>
+                            <th>Unit Price</th>
+                            <th>Subtotal</th>
+                            <th>Status</th>
+                            <th>Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var o in cancelled)
+                        {
+                            <tr>
+                                <td>@o.DisplayOrderId</td>
+                                @if (isAdmin)
+                                {
+                                    <td>@o.Username (@o.CustomerId)</td>
+                                }
+                                <td>@o.ProductName</td>
+                                <td>@o.Quantity</td>
+                                <td>@o.UnitPrice.ToString("C")</td>
+                                <td>@o.TotalPrice.ToString("C")</td>
+                                <td>
+                                    <span class="badge badge-cancelled">@o.Status</span>
+                                </td>
+                                <td>@o.OrderDate.ToLocalTime().ToString("yyyy-MM-dd")</td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <a asp-action="Details" asp-route-partitionKey="@o.PartitionKey" asp-route-rowKey="@o.RowKey" class="btn-view">View</a>
+                                        @if (isAdmin)
+                                        {
+                                            <a asp-action="Delete" asp-route-partitionKey="@o.PartitionKey" asp-route-rowKey="@o.RowKey" class="btn-delete">Delete</a>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <div style="text-align: center; padding: 40px; background: white; border-radius: 8px;">
+                    <p>No cancelled orders found</p>
+                </div>
+            }
+        </div>
     </div>
 </div>
+
+<script>
+    function showTab(tabName) {
+        // Hide all tab contents
+        document.querySelectorAll('.tab-content').forEach(tab => {
+            tab.classList.remove('active');
+        });
+
+        // Remove active class from all buttons
+        document.querySelectorAll('.tab-button').forEach(button => {
+            button.classList.remove('active');
+        });
+
+        // Show selected tab
+        document.getElementById(tabName).classList.add('active');
+
+        // Activate selected button
+        event.currentTarget.classList.add('active');
+    }
+</script>

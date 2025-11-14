@@ -1,4 +1,20 @@
-﻿@{
+﻿@using Microsoft.AspNetCore.Http
+@inject IHttpContextAccessor HttpContextAccessor
+
+@{
+    var user = HttpContextAccessor.HttpContext?.User;
+    if (user != null && user.IsInRole("Admin"))
+    {
+        Layout = "_LayoutAdmin";
+    }
+    else
+    {
+        Layout = "_LayoutCustomer";
+    }
+}
+
+
+@{
     ViewData["Title"] = "Privacy Policy";
 }
 
